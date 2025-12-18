@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
 import { Search, Plus, Building2, User, X } from 'lucide-react';
 import { Client } from '../types';
+import StarRating from '../components/StarRating';
 
 const ClientsPage: React.FC = () => {
   const { clients, users, spheres, sources, addClient } = useData();
@@ -12,7 +13,7 @@ const ClientsPage: React.FC = () => {
   // Form State
   const [formData, setFormData] = useState<Partial<Client>>({
     short_name: '', full_name: '', bin: '', is_gov: false, 
-    email: '', phone: '', legal_address: '', actual_address: '', tags: []
+    email: '', phone: '', legal_address: '', actual_address: '', tags: [], rating: 0
   });
   const [tagInput, setTagInput] = useState('');
 
@@ -28,7 +29,7 @@ const ClientsPage: React.FC = () => {
     
     addClient(formData as Omit<Client, 'id'>);
     setIsModalOpen(false);
-    setFormData({ is_gov: false, tags: [] });
+    setFormData({ is_gov: false, tags: [], rating: 0 });
     setTagInput('');
   };
 
@@ -86,9 +87,12 @@ const ClientsPage: React.FC = () => {
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition">
                   <Building2 size={24} />
                 </div>
-                {client.is_gov && (
-                  <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-medium">GOV</span>
-                )}
+                <div className="flex flex-col items-end gap-2">
+                   {client.is_gov && (
+                     <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-medium">GOV</span>
+                   )}
+                   <StarRating rating={client.rating || 0} size={14} />
+                </div>
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-1">{client.short_name}</h3>
               <p className="text-sm text-slate-500 mb-4 truncate">{client.full_name}</p>
@@ -132,16 +136,30 @@ const ClientsPage: React.FC = () => {
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Short Name</label>
-                  <input required className="input" value={formData.short_name} onChange={e => setFormData({...formData, short_name: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label">BIN</label>
-                  <input className="input" value={formData.bin} onChange={e => setFormData({...formData, bin: e.target.value})} />
-                </div>
+              <div className="flex justify-between items-start">
+                  <div className="flex-1 mr-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">Short Name</label>
+                          <input required className="input" value={formData.short_name} onChange={e => setFormData({...formData, short_name: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="label">BIN</label>
+                          <input className="input" value={formData.bin} onChange={e => setFormData({...formData, bin: e.target.value})} />
+                        </div>
+                      </div>
+                  </div>
+                  <div>
+                      <label className="label">Rating</label>
+                      <StarRating 
+                        rating={formData.rating || 0} 
+                        size={24} 
+                        editable 
+                        onRatingChange={(r) => setFormData({...formData, rating: r})}
+                      />
+                  </div>
               </div>
+
               <div>
                 <label className="label">Full Name</label>
                 <input required className="input" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} />

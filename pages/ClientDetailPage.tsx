@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { Phone, Mail, MapPin, Tag, Briefcase, Database, FileText, UserPlus, Trash2, Edit2, Shield, Key, History, Save, X, Plus } from 'lucide-react';
 import { Contact, Contract, Database1C, Client } from '../types';
 import ConfirmModal from '../components/ConfirmModal';
+import StarRating from '../components/StarRating';
 
 type Tab = 'contacts' | 'contracts' | 'databases' | 'history' | 'info';
 
@@ -60,7 +61,7 @@ const ClientDetailPage: React.FC = () => {
   // Initialize child forms when edit object is selected or modal opens for create
   useEffect(() => {
       if (editingContact) setContactForm(editingContact);
-      else setContactForm({});
+      else setContactForm({ rating: 0 });
   }, [editingContact, showContactModal]);
 
   useEffect(() => {
@@ -175,6 +176,12 @@ const ClientDetailPage: React.FC = () => {
               {client.is_gov && <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-bold">GOV</span>}
               <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">{sphere?.name}</span>
             </div>
+            
+            <div className="flex items-center space-x-2 mb-4">
+                 <StarRating rating={client.rating || 0} size={18} />
+                 <span className="text-sm text-slate-400">({client.rating || 0}/5)</span>
+            </div>
+
             <p className="text-slate-500 mb-4">{client.full_name}</p>
             
             <div className="flex flex-wrap gap-4 text-sm text-slate-600">
@@ -244,8 +251,14 @@ const ClientDetailPage: React.FC = () => {
                             <Trash2 size={16}/>
                         </button>
                     </div>
-                    <div className="font-bold text-slate-800">{c.first_name} {c.last_name}</div>
-                    <div className="text-sm text-blue-600 mb-2">{c.position}</div>
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <div className="font-bold text-slate-800">{c.first_name} {c.last_name}</div>
+                            <div className="text-sm text-blue-600">{c.position}</div>
+                        </div>
+                        <StarRating rating={c.rating || 0} size={14} />
+                    </div>
+                    
                     <div className="text-xs space-y-1 text-slate-600">
                       <div>Phone: {c.phone}</div>
                       <div>Email: {c.email}</div>
@@ -461,16 +474,30 @@ const ClientDetailPage: React.FC = () => {
               <button onClick={() => setShowClientModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
             <form onSubmit={handleClientSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Short Name</label>
-                  <input required className="input" value={clientForm.short_name || ''} onChange={e => setClientForm({...clientForm, short_name: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label">BIN</label>
-                  <input className="input" value={clientForm.bin || ''} onChange={e => setClientForm({...clientForm, bin: e.target.value})} />
-                </div>
+              <div className="flex justify-between items-start">
+                  <div className="flex-1 mr-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                        <label className="label">Short Name</label>
+                        <input required className="input" value={clientForm.short_name || ''} onChange={e => setClientForm({...clientForm, short_name: e.target.value})} />
+                        </div>
+                        <div>
+                        <label className="label">BIN</label>
+                        <input className="input" value={clientForm.bin || ''} onChange={e => setClientForm({...clientForm, bin: e.target.value})} />
+                        </div>
+                    </div>
+                  </div>
+                  <div>
+                      <label className="label">Rating</label>
+                      <StarRating 
+                        rating={clientForm.rating || 0} 
+                        size={24} 
+                        editable 
+                        onRatingChange={(r) => setClientForm({...clientForm, rating: r})}
+                      />
+                  </div>
               </div>
+
               <div>
                 <label className="label">Full Name</label>
                 <input required className="input" value={clientForm.full_name || ''} onChange={e => setClientForm({...clientForm, full_name: e.target.value})} />
@@ -572,7 +599,19 @@ const ClientDetailPage: React.FC = () => {
                  <input className="input" placeholder="First Name" required value={contactForm.first_name || ''} onChange={e => setContactForm({...contactForm, first_name: e.target.value})} />
                  <input className="input" placeholder="Last Name" value={contactForm.last_name || ''} onChange={e => setContactForm({...contactForm, last_name: e.target.value})} />
                </div>
-               <input className="input" placeholder="Position" value={contactForm.position || ''} onChange={e => setContactForm({...contactForm, position: e.target.value})} />
+               <div className="grid grid-cols-2 gap-3">
+                 <input className="input" placeholder="Position" value={contactForm.position || ''} onChange={e => setContactForm({...contactForm, position: e.target.value})} />
+                 <div className="flex items-center gap-2">
+                    <label className="label whitespace-nowrap mb-0 mr-2">Rating:</label>
+                    <StarRating 
+                        rating={contactForm.rating || 0} 
+                        size={20} 
+                        editable 
+                        onRatingChange={(r) => setContactForm({...contactForm, rating: r})}
+                    />
+                 </div>
+               </div>
+               
                <div className="grid grid-cols-2 gap-3">
                  <input className="input" placeholder="Phone" required value={contactForm.phone || ''} onChange={e => setContactForm({...contactForm, phone: e.target.value})} />
                  <input className="input" placeholder="Email" required type="email" value={contactForm.email || ''} onChange={e => setContactForm({...contactForm, email: e.target.value})} />

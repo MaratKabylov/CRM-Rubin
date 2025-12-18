@@ -1,3 +1,4 @@
+
 import { 
   User, Client, Contact, Contract, Database1C, 
   ActivitySphere, LeadSource, Organization, Configuration, ConfigVersion, HistoryLog 
@@ -44,6 +45,7 @@ const seedClients: Client[] = [
     full_name: 'TechStore Ltd.',
     bin: '123456789012',
     tags: ['vip', 'urgent'],
+    rating: 5,
     is_gov: false,
     activity_id: 'as1',
     source_id: 'ls1',
@@ -64,6 +66,7 @@ const seedContacts: Contact[] = [
     position: 'Director',
     phone: '+79990001122',
     email: 'john@techstore.local',
+    rating: 4,
     rustdesk_id: '111 222 333',
     anydesk_id: '444 555 666'
   }

@@ -1,3 +1,4 @@
+
 export type Role = 'admin' | 'user';
 export type WorkMode = 'file' | 'server';
 export type DbState = 'full_support' | 'full_support_with_extensions' | 'minor_change' | 'major_change' | 'custom_solution';
@@ -65,6 +66,7 @@ export interface Client {
   full_name: string;
   bin?: string;
   tags?: string[];
+  rating?: number; // 0 to 5
   is_gov: boolean;
   activity_id: string;
   source_id: string;
@@ -84,6 +86,7 @@ export interface Contact {
   position: string;
   phone: string;
   email: string;
+  rating?: number; // 0 to 5
   telegram_id?: string;
   rustdesk_id?: string;
   rustdesk_password?: string;
