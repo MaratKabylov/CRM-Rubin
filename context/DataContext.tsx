@@ -97,7 +97,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (action === 'update' && oldItem && newItemData) {
             entityId = oldItem.id;
             finalParentId = typeof parentId === 'function' ? parentId(oldItem) : parentId;
-            details = `Updated ${entityType}`;
+            
+            // Generate detailed change info for tasks
+            if (entityType === 'task') {
+                const changes: string[] = [];
+                Object.keys(newItemData).forEach(key => {
+                    const k = key as keyof Item;
+                    if (oldItem[k] !== newItemData[k]) {
+                        changes.push(String(key));
+                    }
+                });
+                details = changes.length > 0 ? `Changed: ${changes.join(', ')}` : 'Updated task';
+            } else {
+                details = `Updated ${entityType}`;
+            }
         }
 
         db.history.create({

@@ -6,7 +6,7 @@ import {
   X, CheckCircle, MessageSquare, Send, Clock, User, 
   Building, Database as DbIcon, Star, Calendar, 
   Tag as TagIcon, Eye, Edit2, AlertCircle,
-  Phone, Mail, Layers
+  Phone, Mail, Layers, History as HistoryIcon
 } from 'lucide-react';
 import { Task, TaskStatus, Priority } from '../types';
 import StarRating from './StarRating';
@@ -27,20 +27,22 @@ const PriorityBadge = ({ p }: { p: Priority }) => {
 };
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, onClose }) => {
-  const { tasks, clients, contacts, databases, users, taskComments, queues, updateTask, addComment } = useData();
+  const { tasks, clients, contacts, databases, users, taskComments, historyLogs, queues, updateTask, addComment } = useData();
   const { user: currentUser } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
+  const [activeSubTab, setActiveSubTab] = useState<'comments' | 'history'>('comments');
 
   // Get live data
   const task = tasks.find(t => t.id === initialTask.id) || initialTask;
   const client = clients.find(c => c.id === task.client_id);
   const contact = contacts.find(c => c.id === task.contact_id);
   const db1c = databases.find(d => d.id === task.db_id);
-  const comments = taskComments.filter(c => c.task_id === task.id);
+  const comments = taskComments.filter(c => c.task_id === task.id).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const logs = historyLogs.filter(h => h.entity_id === task.id);
   const queue = queues.find(q => q.id === task.queue_id);
   
   const performers = users.filter(u => task.performer_ids?.includes(u.id));
@@ -138,7 +140,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
 
                 <div>
                     <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 tracking-wider">Description</h4>
-                    <p className="text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100 italic">
+                    <p className="text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100 italic text-sm">
                         {task.description || 'No description provided.'}
                     </p>
                 </div>
@@ -162,36 +164,74 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
                     </div>
                 )}
 
-                {/* Comments Section */}
-                <div className="pt-4 border-t border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider flex items-center gap-2">
-                        <MessageSquare size={14}/> Communication ({comments.length})
-                    </h4>
-                    <div className="space-y-4 mb-6">
-                        {comments.map(c => (
-                            <div key={c.id} className="flex gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase border border-blue-200">
-                                    {c.user_name.charAt(0)}
-                                </div>
-                                <div className="flex-1 bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs font-bold text-slate-800">{c.user_name}</span>
-                                        <span className="text-[10px] text-slate-400">{new Date(c.timestamp).toLocaleString([], {hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit'})}</span>
-                                    </div>
-                                    <p className="text-sm text-slate-600">{c.text}</p>
-                                </div>
-                            </div>
-                        ))}
+                {/* Sub-Tabs: Comments vs History */}
+                <div className="pt-4 border-t border-slate-100 flex flex-col h-full">
+                    <div className="flex border-b border-slate-100 mb-4 gap-4">
+                        <button 
+                            onClick={() => setActiveSubTab('comments')}
+                            className={`pb-2 px-1 text-xs font-bold uppercase tracking-widest transition-colors ${activeSubTab === 'comments' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Communication ({comments.length})
+                        </button>
+                        <button 
+                            onClick={() => setActiveSubTab('history')}
+                            className={`pb-2 px-1 text-xs font-bold uppercase tracking-widest transition-colors ${activeSubTab === 'history' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Change History ({logs.length})
+                        </button>
                     </div>
-                    <form onSubmit={handleSendComment} className="flex gap-2">
-                        <input 
-                            className="input flex-1 bg-slate-50 border-transparent focus:bg-white" 
-                            placeholder="Type your message..." 
-                            value={commentText}
-                            onChange={e => setCommentText(e.target.value)}
-                        />
-                        <button type="submit" className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20"><Send size={18}/></button>
-                    </form>
+
+                    {activeSubTab === 'comments' ? (
+                        <div className="flex flex-col gap-4">
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {comments.map(c => (
+                                    <div key={c.id} className="flex gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase border border-blue-200">
+                                            {c.user_name.charAt(0)}
+                                        </div>
+                                        <div className="flex-1 bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-xs font-bold text-slate-800">{c.user_name}</span>
+                                                <span className="text-[10px] text-slate-400">{new Date(c.timestamp).toLocaleString([], {hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit'})}</span>
+                                            </div>
+                                            <p className="text-sm text-slate-600">{c.text}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {comments.length === 0 && <p className="text-center py-6 text-slate-400 text-xs italic">No comments yet.</p>}
+                            </div>
+                            <form onSubmit={handleSendComment} className="flex gap-2 mt-4">
+                                <input 
+                                    className="input flex-1 bg-slate-50 border-transparent focus:bg-white text-sm" 
+                                    placeholder="Type your message..." 
+                                    value={commentText}
+                                    onChange={e => setCommentText(e.target.value)}
+                                />
+                                <button type="submit" className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20"><Send size={18}/></button>
+                            </form>
+                        </div>
+                    ) : (
+                        <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-4 before:w-0.5 before:bg-slate-100 pl-8 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                            {logs.map((log, idx) => (
+                                <div key={log.id} className="relative">
+                                    <div className="absolute -left-10 mt-1.5 w-4 h-4 rounded-full bg-white border-2 border-blue-400 flex items-center justify-center z-10">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-xs font-bold text-slate-800">{log.user_name}</span>
+                                            <span className="text-[10px] text-slate-400 flex items-center gap-1"><Clock size={10}/> {new Date(log.timestamp).toLocaleString()}</span>
+                                        </div>
+                                        <div className="bg-white border border-slate-100 rounded-lg p-2 shadow-sm">
+                                            <p className="text-xs text-slate-600 font-medium uppercase tracking-tight mb-1">{log.action}</p>
+                                            <p className="text-xs text-slate-500 italic">{log.details}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {logs.length === 0 && <p className="text-center py-6 text-slate-400 text-xs italic">No history recorded.</p>}
+                        </div>
+                    )}
                 </div>
             </div>
 
