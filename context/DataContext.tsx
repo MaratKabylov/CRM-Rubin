@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { db } from '../services/mockDb';
 import * as T from '../types';
 import { useAuth } from './AuthContext';
@@ -7,6 +7,8 @@ import { useAuth } from './AuthContext';
 interface DataContextType {
   users: T.User[];
   clients: T.Client[];
+  queues: T.TaskQueue[];
+  queueTemplates: T.QueueTemplateDefinition[];
   spheres: T.ActivitySphere[];
   sources: T.LeadSource[];
   orgs: T.Organization[];
@@ -29,7 +31,15 @@ interface DataContextType {
   updateContact: (id: string, data: Partial<T.Contact>) => void;
   deleteContact: (id: string) => void;
   
-  addTask: (data: Omit<T.Task, 'id' | 'created_at' | 'task_no'>) => void;
+  addQueue: (data: Omit<T.TaskQueue, 'id'>) => void;
+  updateQueue: (id: string, data: Partial<T.TaskQueue>) => void;
+  deleteQueue: (id: string) => void;
+
+  addQueueTemplate: (data: Omit<T.QueueTemplateDefinition, 'id'>) => void;
+  updateQueueTemplate: (id: string, data: Partial<T.QueueTemplateDefinition>) => void;
+  deleteQueueTemplate: (id: string) => void;
+
+  addTask: (data: Omit<T.Task, 'id' | 'created_at' | 'task_no' | 'queue_task_no'>) => void;
   updateTask: (id: string, data: Partial<T.Task>) => void;
   deleteTask: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
@@ -45,8 +55,8 @@ interface DataContextType {
   addUser: (data: Omit<T.User, 'id'>) => void;
   deleteUser: (id: string) => void;
   
-  addDirectoryItem: (type: 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions', data: any) => void;
-  deleteDirectoryItem: (type: 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions', id: string) => void;
+  addDirectoryItem: (type: 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions' | 'queue_templates', data: any) => void;
+  deleteDirectoryItem: (type: 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions' | 'queue_templates', id: string) => void;
   
   getClientStats: (clientId: string) => { avgRating: number; taskCount: number };
 }
@@ -117,6 +127,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value: DataContextType = {
     users: db.users.getAll(),
     clients: db.clients.getAll(),
+    queues: db.queues.getAll(),
+    queueTemplates: db.queueTemplates.getAll(),
     spheres: db.activitySpheres.getAll(),
     sources: db.leadSources.getAll(),
     orgs: db.organizations.getAll(),
@@ -142,13 +154,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if(old) logAndExecute('client', id, 'delete', () => db.clients.delete(id), old);
     },
 
+    addQueue: (data) => logAndExecute('queue', (q) => q.id, 'create', () => db.queues.create(data)),
+    updateQueue: (id, data) => {
+        const old = db.queues.getById(id);
+        if(old) logAndExecute('queue', id, 'update', () => db.queues.update(id, data), old, data);
+    },
+    deleteQueue: (id) => {
+        const old = db.queues.getById(id);
+        if(old) logAndExecute('queue', id, 'delete', () => db.queues.delete(id), old);
+    },
+
+    addQueueTemplate: (data) => logAndExecute('queue_template', (q) => q.id, 'create', () => db.queueTemplates.create(data)),
+    updateQueueTemplate: (id, data) => {
+        const old = db.queueTemplates.getById(id);
+        if(old) logAndExecute('queue_template', id, 'update', () => db.queueTemplates.update(id, data), old, data);
+    },
+    deleteQueueTemplate: (id) => {
+        const old = db.queueTemplates.getById(id);
+        if(old) logAndExecute('queue_template', id, 'delete', () => db.queueTemplates.delete(id), old);
+    },
+
     addTask: (data) => {
         const currentTasks = db.tasks.getAll();
         const maxNo = currentTasks.reduce((max, task) => Math.max(max, task.task_no || 0), 0);
+        
+        // Calculate number within queue
+        const queueTasks = currentTasks.filter(t => t.queue_id === data.queue_id);
+        const maxQueueNo = queueTasks.reduce((max, task) => Math.max(max, task.queue_task_no || 0), 0);
+
         return logAndExecute('task', data.client_id, 'create', () => 
             db.tasks.create({ 
                 ...data, 
-                task_no: maxNo + 1, 
+                task_no: maxNo + 1,
+                queue_task_no: maxQueueNo + 1, 
                 created_at: new Date().toISOString() 
             })
         );
@@ -213,6 +251,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (type === 'orgs') db.organizations.create(data);
       if (type === 'configs') db.configurations.create(data);
       if (type === 'versions') db.configVersions.create(data);
+      if (type === 'queue_templates') db.queueTemplates.create(data);
       refreshData();
     },
     deleteDirectoryItem: (type, id) => {
@@ -221,6 +260,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (type === 'orgs') db.organizations.delete(id);
       if (type === 'configs') db.configurations.delete(id);
       if (type === 'versions') db.configVersions.delete(id);
+      if (type === 'queue_templates') db.queueTemplates.delete(id);
       refreshData();
     }
   };

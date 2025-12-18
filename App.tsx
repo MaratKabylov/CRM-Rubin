@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Database, BookOpen, Settings, LogOut, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, Database, BookOpen, Settings, LogOut, ClipboardList, Layers } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import LoginPage from './pages/LoginPage';
@@ -11,6 +11,7 @@ import ClientDetailPage from './pages/ClientDetailPage';
 import DirectoriesPage from './pages/DirectoriesPage';
 import UsersPage from './pages/UsersPage';
 import TasksPage from './pages/TasksPage';
+import QueuesPage from './pages/QueuesPage';
 
 interface SidebarItemProps {
   to: string;
@@ -48,6 +49,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
         
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
           <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+          <SidebarItem to="/queues" icon={Layers} label="Queues" />
           <SidebarItem to="/tasks" icon={ClipboardList} label="Tasks & Issues" />
           <SidebarItem to="/clients" icon={Users} label="Clients" />
           <SidebarItem to="/directories" icon={BookOpen} label="Directories" />
@@ -90,6 +92,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/dashboard" element={<PrivateLayout><DashboardPage /></PrivateLayout>} />
+            <Route path="/queues" element={<PrivateLayout><QueuesPage /></PrivateLayout>} />
             <Route path="/tasks" element={<PrivateLayout><TasksPage /></PrivateLayout>} />
             <Route path="/clients" element={<PrivateLayout><ClientsPage /></PrivateLayout>} />
             <Route path="/clients/:id" element={<PrivateLayout><ClientDetailPage /></PrivateLayout>} />

@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Search, Filter, Clock, MoreVertical, CheckCircle, MessageSquare, Paperclip, ChevronRight, ClipboardList } from 'lucide-react';
-import { Task, Priority, TaskStatus } from '../types';
+import { Plus, Search, Filter, Clock, CheckCircle, ChevronRight, ClipboardList, Layers } from 'lucide-react';
+import { Task, Priority } from '../types';
 import TaskModal from '../components/TaskModal';
 import TaskDetailModal from '../components/TaskDetailModal';
 
@@ -17,16 +17,19 @@ const PriorityBadge = ({ p }: { p: Priority }) => {
 };
 
 const TasksPage: React.FC = () => {
-  const { tasks, clients, users } = useData();
+  const { tasks, clients, users, queues } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const filtered = tasks.filter(t => 
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.task_no.toString() === searchTerm ||
-    clients.find(c => c.id === t.client_id)?.short_name.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const filtered = tasks.filter(t => {
+    const queue = queues.find(q => q.id === t.queue_id);
+    const prefixId = `${queue?.prefix}-${t.queue_task_no}`;
+    
+    return t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    prefixId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    clients.find(c => c.id === t.client_id)?.short_name.toLowerCase().includes(searchTerm.toLowerCase());
+  }).sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="space-y-6">
@@ -42,7 +45,7 @@ const TasksPage: React.FC = () => {
           <Search className="text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search by ID, title or client..." 
+            placeholder="Search by ID (e.g. SUP-1), title or client..." 
             className="flex-1 outline-none text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -56,9 +59,10 @@ const TasksPage: React.FC = () => {
       <div className="grid grid-cols-1 gap-3">
         {filtered.map(task => {
           const client = clients.find(c => c.id === task.client_id);
-          const author = users.find(u => u.id === task.author_id);
+          const queue = queues.find(q => q.id === task.queue_id);
           const doneItems = task.checklist.filter(i => i.is_done).length;
           const totalItems = task.checklist.length;
+          const prefixId = `${queue?.prefix || 'TASK'}-${task.queue_task_no || task.task_no}`;
           
           return (
             <div 
@@ -67,21 +71,21 @@ const TasksPage: React.FC = () => {
               className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition cursor-pointer flex items-center justify-between group"
             >
               <div className="flex items-center gap-4 flex-1">
-                <div className={`p-2 rounded-lg ${task.status === 'done' ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
-                  {task.status === 'done' ? <CheckCircle size={20}/> : <Clock size={20}/>}
+                <div className={`p-2 rounded-lg ${task.status.toLowerCase().includes('закрыт') || task.status.toLowerCase().includes('done') || task.status.toLowerCase().includes('выполнено') ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'}`}>
+                  {task.status.toLowerCase().includes('закрыт') ? <CheckCircle size={20}/> : <Clock size={20}/>}
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold text-slate-400 font-mono">#{task.task_no}</span>
+                    <span className="text-xs font-bold text-slate-400 font-mono tracking-tight">{prefixId}</span>
                     <h3 className="font-bold text-slate-800 group-hover:text-blue-600">{task.title}</h3>
                     <PriorityBadge p={task.priority} />
                   </div>
                   <div className="flex items-center gap-3 text-xs text-slate-500">
                     <span className="font-medium text-blue-600">{client?.short_name}</span>
                     <span>•</span>
-                    <span className="capitalize">{task.type}</span>
+                    <span className="flex items-center gap-1"><Layers size={10}/> {queue?.name}</span>
                     <span>•</span>
-                    <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
+                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md font-bold text-[9px] uppercase">{task.status}</span>
                   </div>
                 </div>
               </div>

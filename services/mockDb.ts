@@ -2,12 +2,52 @@
 import { 
   User, Client, Contact, Contract, Database1C, 
   ActivitySphere, LeadSource, Organization, Configuration, ConfigVersion, HistoryLog,
-  Task, TaskComment
+  Task, TaskComment, TaskQueue, QueueTemplateDefinition
 } from '../types';
 
 const seedUsers: User[] = [
   { id: 'u1', name: 'Administrator', email: 'admin@crm.local', password: 'admin', role: 'admin' },
   { id: 'u2', name: 'Manager', email: 'manager@crm.local', password: 'user', role: 'user' },
+];
+
+const seedQueueTemplates: QueueTemplateDefinition[] = [
+  { 
+    id: 'qt1', 
+    name: 'Базовый шаблон', 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+  },
+  { 
+    id: 'qt2', 
+    name: 'Линия поддержки', 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+  },
+  { 
+    id: 'qt3', 
+    name: 'Управление проектами', 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+  },
+  { 
+    id: 'qt4', 
+    name: 'Разработка', 
+    statuses: ['Backlog', 'В разработке', 'Тестирование', 'Выполнено'] 
+  }
+];
+
+const seedQueues: TaskQueue[] = [
+  { 
+    id: 'q1', 
+    name: 'Линия поддержки', 
+    prefix: 'SUP', 
+    template: 'qt2', 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+  },
+  { 
+    id: 'q2', 
+    name: 'Разработка', 
+    prefix: 'DEV', 
+    template: 'qt4', 
+    statuses: ['Backlog', 'В разработке', 'Тестирование', 'Выполнено'] 
+  }
 ];
 
 const seedActivitySpheres: ActivitySphere[] = [
@@ -101,12 +141,14 @@ const seedDatabases: Database1C[] = [
 const seedTasks: Task[] = [
   {
     id: 't1',
+    queue_id: 'q1',
+    queue_task_no: 1,
     task_no: 1,
     client_id: 'cl1',
     contact_id: 'ct1',
     type: 'consultation',
     priority: 'high',
-    status: 'open',
+    status: 'Зарегистрирована',
     title: 'Update Accounting Rules',
     description: 'The client requested a consultation on new tax rules implementation.',
     author_id: 'u1',
@@ -183,6 +225,8 @@ class Collection<T extends { id: string }> {
 
 export const db = {
   users: new Collection<User>('users', seedUsers),
+  queues: new Collection<TaskQueue>('queues', seedQueues),
+  queueTemplates: new Collection<QueueTemplateDefinition>('queue_templates', seedQueueTemplates),
   activitySpheres: new Collection<ActivitySphere>('spheres', seedActivitySpheres),
   leadSources: new Collection<LeadSource>('sources', seedLeadSources),
   organizations: new Collection<Organization>('orgs', seedOrganizations),

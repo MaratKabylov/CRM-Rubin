@@ -5,10 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { 
   X, CheckCircle, MessageSquare, Send, Clock, User, 
   Building, Database as DbIcon, Star, Calendar, 
-  Tag as TagIcon, Users, Eye, Edit2, AlertCircle,
-  Phone, Mail
+  Tag as TagIcon, Eye, Edit2, AlertCircle,
+  Phone, Mail, Layers
 } from 'lucide-react';
-import { Task, TaskComment, TaskStatus, Priority } from '../types';
+import { Task, TaskStatus, Priority } from '../types';
 import StarRating from './StarRating';
 import TaskModal from './TaskModal';
 
@@ -27,7 +27,7 @@ const PriorityBadge = ({ p }: { p: Priority }) => {
 };
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, onClose }) => {
-  const { tasks, clients, contacts, databases, users, taskComments, updateTask, addComment } = useData();
+  const { tasks, clients, contacts, databases, users, taskComments, queues, updateTask, addComment } = useData();
   const { user: currentUser } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -41,12 +41,18 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
   const contact = contacts.find(c => c.id === task.contact_id);
   const db1c = databases.find(d => d.id === task.db_id);
   const comments = taskComments.filter(c => c.task_id === task.id);
+  const queue = queues.find(q => q.id === task.queue_id);
   
   const performers = users.filter(u => task.performer_ids?.includes(u.id));
   const observers = users.filter(u => task.observer_ids?.includes(u.id));
 
+  const isClosedStatus = (status: string) => {
+    const s = status.toLowerCase();
+    return s.includes('закрыт') || s.includes('done') || s.includes('выполнено');
+  };
+
   const handleStatusChange = (newStatus: TaskStatus) => {
-      if (newStatus === 'done') {
+      if (isClosedStatus(newStatus)) {
           setShowRating(true);
       } else {
           updateTask(task.id, { status: newStatus });
@@ -54,7 +60,9 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
   };
 
   const handleCompleteWithRating = () => {
-      updateTask(task.id, { status: 'done', completion_rating: rating });
+      // Find the "Closed" status from the queue's list
+      const closedStatus = queue?.statuses.find(isClosedStatus) || queue?.statuses[queue.statuses.length - 1] || 'Closed';
+      updateTask(task.id, { status: closedStatus, completion_rating: rating });
       setShowRating(false);
       onClose();
   };
@@ -75,6 +83,8 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
     return <TaskModal onClose={() => setIsEditing(false)} initialTask={task} />;
   }
 
+  const prefixId = `${queue?.prefix || 'TASK'}-${task.queue_task_no || task.task_no}`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm">
       <div className="bg-white h-full w-full max-w-3xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
@@ -83,9 +93,9 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
         <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-bold text-slate-400 font-mono bg-slate-200 px-2 py-0.5 rounded">#{task.task_no}</span>
+                <span className="text-xs font-bold text-slate-400 font-mono bg-slate-200 px-2 py-0.5 rounded">{prefixId}</span>
                 <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase">{task.type}</span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${task.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{task.status}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${isClosedStatus(task.status) ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{task.status}</span>
                 <PriorityBadge p={task.priority} />
             </div>
             <h2 className="text-2xl font-bold text-slate-800 leading-tight">{task.title}</h2>
@@ -108,15 +118,21 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
             {/* Main Content */}
             <div className="flex-1 p-6 space-y-8 border-r border-slate-50">
                 {/* Status Actions */}
-                {task.status !== 'done' && (
-                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                        {task.status === 'open' && (
-                            <button onClick={() => handleStatusChange('in_progress')} className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold flex-1 shadow-sm hover:bg-blue-50 transition">Start Work</button>
-                        )}
-                        {task.status === 'in_progress' && (
-                            <button onClick={() => handleStatusChange('review')} className="bg-white text-slate-600 px-4 py-2 rounded-lg font-bold flex-1 shadow-sm hover:bg-slate-50 transition">Request Review</button>
-                        )}
-                        <button onClick={() => handleStatusChange('done')} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold flex-1 hover:bg-green-700 shadow-lg shadow-green-500/20 transition">Finish</button>
+                {!isClosedStatus(task.status) && queue && (
+                    <div className="flex flex-wrap gap-2 p-1 bg-slate-100 rounded-xl">
+                        {queue.statuses.map(s => (
+                            <button 
+                                key={s}
+                                onClick={() => handleStatusChange(s)}
+                                className={`px-4 py-2 rounded-lg font-bold flex-1 shadow-sm transition text-xs whitespace-nowrap ${
+                                    task.status === s 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-white text-slate-600 hover:bg-slate-50'
+                                }`}
+                            >
+                                {s}
+                            </button>
+                        ))}
                     </div>
                 )}
 
@@ -182,8 +198,15 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
             {/* Sidebar Metadata */}
             <div className="w-full md:w-72 bg-slate-50/50 p-6 space-y-6">
                 <div>
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Client Context</h4>
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Workflow Context</h4>
                     <div className="space-y-4">
+                        <div className="flex items-start gap-3">
+                            <Layers size={16} className="text-blue-500 mt-0.5"/>
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">{queue?.name}</p>
+                                <p className="text-[10px] text-slate-500 font-medium">Task Queue</p>
+                            </div>
+                        </div>
                         <div className="flex items-start gap-3">
                             <Building size={16} className="text-slate-400 mt-0.5"/>
                             <div>
@@ -249,20 +272,6 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
                                 <span className="text-xs text-slate-700">{u.name}</span>
                             </div>
                         )) : <span className="text-xs text-slate-400 italic">Unassigned</span>}
-                    </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-200">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Observers</h4>
-                    <div className="flex flex-col gap-2">
-                        {observers.length > 0 ? observers.map(u => (
-                            <div key={u.id} className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-500 border border-slate-300">
-                                    {u.name.charAt(0)}
-                                </div>
-                                <span className="text-xs text-slate-600">{u.name}</span>
-                            </div>
-                        )) : <span className="text-xs text-slate-400 italic">None</span>}
                     </div>
                 </div>
 

@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
-import { X, Save, Plus, UserPlus, Eye, User as UserIcon, Tag as TagIcon } from 'lucide-react';
-import { Task, TaskType, Priority } from '../types';
+import { X, Save, Plus, UserPlus, Eye, User as UserIcon, Tag as TagIcon, Layers } from 'lucide-react';
+import { Task, TaskType, Priority, TaskQueue } from '../types';
 
 interface TaskModalProps {
   onClose: () => void;
@@ -11,7 +11,7 @@ interface TaskModalProps {
 }
 
 const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
-  const { clients, contacts, databases, users, addTask, updateTask } = useData();
+  const { clients, contacts, databases, users, queues, addTask, updateTask } = useData();
   const { user: currentUser } = useAuth();
 
   const [formData, setFormData] = useState<Partial<Task>>(initialTask || {
@@ -19,8 +19,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
     description: '',
     type: 'request',
     priority: 'medium',
-    status: 'open',
+    status: '',
     client_id: '',
+    queue_id: queues[0]?.id || '',
     performer_ids: [],
     observer_ids: [],
     tags: [],
@@ -31,12 +32,21 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
   const [checkInput, setCheckInput] = useState('');
   const [tagInput, setTagInput] = useState('');
 
+  const selectedQueue = queues.find(q => q.id === formData.queue_id);
+  
+  // Set default status if missing and queue selected
+  useEffect(() => {
+    if (selectedQueue && !formData.status) {
+        setFormData(prev => ({ ...prev, status: selectedQueue.statuses[0] }));
+    }
+  }, [selectedQueue]);
+
   const clientContacts = contacts.filter(c => c.client_id === formData.client_id);
   const clientDbs = databases.filter(d => d.client_id === formData.client_id);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.client_id) return;
+    if (!formData.title || !formData.client_id || !formData.queue_id) return;
 
     if (initialTask) {
         updateTask(initialTask.id, formData);
@@ -113,6 +123,40 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                    <Layers size={16} className="text-blue-600"/>
+                    <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Work Context</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className="label">Queue</label>
+                        <select 
+                            required 
+                            className="input bg-white" 
+                            value={formData.queue_id} 
+                            onChange={e => setFormData({...formData, queue_id: e.target.value, status: ''})}
+                            disabled={!!initialTask}
+                        >
+                            <option value="">Select queue...</option>
+                            {queues.map(q => <option key={q.id} value={q.id}>{q.name} ({q.prefix})</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label">Status</label>
+                        <select 
+                            required 
+                            className="input bg-white" 
+                            value={formData.status} 
+                            onChange={e => setFormData({...formData, status: e.target.value})}
+                        >
+                            <option value="">Select status...</option>
+                            {selectedQueue?.statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    </div>
+                </div>
+              </div>
+
               <div>
                 <label className="label">Task Title</label>
                 <input 

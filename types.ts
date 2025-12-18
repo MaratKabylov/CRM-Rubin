@@ -2,12 +2,20 @@
 export type Role = 'admin' | 'user';
 export type WorkMode = 'file' | 'server';
 export type DbState = 'full_support' | 'full_support_with_extensions' | 'minor_change' | 'major_change' | 'custom_solution';
-export type EntityType = 'client' | 'contact' | 'contract' | 'database' | 'task';
+export type EntityType = 'client' | 'contact' | 'contract' | 'database' | 'task' | 'queue' | 'queue_template';
 export type ActionType = 'create' | 'update' | 'delete' | 'comment' | 'complete';
 
 export type TaskType = 'consultation' | 'development' | 'request';
 export type Priority = 'low' | 'medium' | 'high';
-export type TaskStatus = 'open' | 'in_progress' | 'review' | 'done';
+export type TaskStatus = string; // Now dynamic based on queue
+
+export type QueueTemplate = string; // Changed from union to string to support dynamic templates
+
+export interface QueueTemplateDefinition {
+  id: string;
+  name: string;
+  statuses: string[];
+}
 
 export interface HistoryLog {
   id: string;
@@ -62,7 +70,7 @@ export interface Client {
   full_name: string;
   bin?: string;
   tags?: string[];
-  rating?: number; // Manual or Average
+  rating?: number;
   is_gov: boolean;
   activity_id: string;
   source_id: string;
@@ -120,6 +128,14 @@ export interface Database1C {
   client_id: string;
 }
 
+export interface TaskQueue {
+  id: string;
+  name: string;
+  prefix: string;
+  template: string; // Refers to QueueTemplateDefinition.id or name
+  statuses: string[];
+}
+
 export interface ChecklistItem {
   id: string;
   text: string;
@@ -137,13 +153,15 @@ export interface TaskComment {
 
 export interface TaskAttachment {
   name: string;
-  url: string; // base64 or local blob for demo
+  url: string;
   type: string;
 }
 
 export interface Task {
   id: string;
-  task_no: number;
+  queue_id: string;
+  queue_task_no: number;
+  task_no: number; // Legacy, keep for compatibility or remove
   client_id: string;
   contact_id?: string;
   db_id?: string;
@@ -160,5 +178,5 @@ export interface Task {
   created_at: string;
   checklist: ChecklistItem[];
   attachments: TaskAttachment[];
-  completion_rating?: number; // Rating given to client upon completion
+  completion_rating?: number;
 }
