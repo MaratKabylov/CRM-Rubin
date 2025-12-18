@@ -2,56 +2,53 @@
 export type Role = 'admin' | 'user';
 export type WorkMode = 'file' | 'server';
 export type DbState = 'full_support' | 'full_support_with_extensions' | 'minor_change' | 'major_change' | 'custom_solution';
-export type EntityType = 'client' | 'contact' | 'contract' | 'database';
-export type ActionType = 'create' | 'update' | 'delete';
+export type EntityType = 'client' | 'contact' | 'contract' | 'database' | 'task';
+export type ActionType = 'create' | 'update' | 'delete' | 'comment' | 'complete';
 
-// History Log
+export type TaskType = 'consultation' | 'development' | 'request';
+export type Priority = 'low' | 'medium' | 'high';
+export type TaskStatus = 'open' | 'in_progress' | 'review' | 'done';
+
 export interface HistoryLog {
   id: string;
   entity_type: EntityType;
   entity_id: string;
-  parent_client_id: string; // To easily filter logs for a specific client page
+  parent_client_id: string;
   user_name: string;
   action: ActionType;
-  details: string; // Human readable string of changes "Changed status: Active -> Inactive"
+  details: string;
   timestamp: string;
 }
 
-// 0) Authentication & Users
 export interface User {
   id: string;
   name: string;
   email: string;
-  password: string; // In real app, this would be hashed
+  password: string;
   role: Role;
 }
 
-// 2) Activity Spheres
 export interface ActivitySphere {
   id: string;
   name: string;
 }
 
-// 3) Lead Sources
 export interface LeadSource {
   id: string;
   name: string;
 }
 
-// 5) Organizations (Vendor organizations)
 export interface Organization {
   id: string;
   name: string;
 }
 
-// 7) Configurations
 export interface Configuration {
   id: string;
   name: string;
   is_industry: boolean;
 }
 
-// 8) Config Versions
 export interface ConfigVersion {
   id: string;
   release: string;
@@ -59,14 +56,13 @@ export interface ConfigVersion {
   date: string;
 }
 
-// 1) Clients
 export interface Client {
   id: string;
   short_name: string;
   full_name: string;
   bin?: string;
   tags?: string[];
-  rating?: number; // 0 to 5
+  rating?: number; // Manual or Average
   is_gov: boolean;
   activity_id: string;
   source_id: string;
@@ -77,7 +73,6 @@ export interface Client {
   phone: string;
 }
 
-// 4) Contacts
 export interface Contact {
   id: string;
   client_id: string;
@@ -86,7 +81,7 @@ export interface Contact {
   position: string;
   phone: string;
   email: string;
-  rating?: number; // 0 to 5
+  rating?: number;
   telegram_id?: string;
   rustdesk_id?: string;
   rustdesk_password?: string;
@@ -94,7 +89,6 @@ export interface Contact {
   anydesk_password?: string;
 }
 
-// 6) Contracts
 export interface Contract {
   id: string;
   client_id: string;
@@ -112,7 +106,6 @@ export interface Contract {
   minutes_included: number;
 }
 
-// 9) Databases
 export interface Database1C {
   id: string;
   name: string;
@@ -124,5 +117,48 @@ export interface Database1C {
   its_supported: boolean;
   work_mode: WorkMode;
   state: DbState;
-  client_id: string; // Foreign Key linking to Client
+  client_id: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  is_done: boolean;
+}
+
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  user_id: string;
+  user_name: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface TaskAttachment {
+  name: string;
+  url: string; // base64 or local blob for demo
+  type: string;
+}
+
+export interface Task {
+  id: string;
+  task_no: number;
+  client_id: string;
+  contact_id?: string;
+  db_id?: string;
+  type: TaskType;
+  priority: Priority;
+  status: TaskStatus;
+  title: string;
+  description: string;
+  author_id: string;
+  performer_ids: string[];
+  observer_ids: string[];
+  tags: string[];
+  deadline?: string;
+  created_at: string;
+  checklist: ChecklistItem[];
+  attachments: TaskAttachment[];
+  completion_rating?: number; // Rating given to client upon completion
 }

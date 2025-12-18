@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Database, BookOpen, Settings, LogOut, FileText, Monitor } from 'lucide-react';
+import { LayoutDashboard, Users, Database, BookOpen, Settings, LogOut, ClipboardList } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import LoginPage from './pages/LoginPage';
@@ -9,6 +10,7 @@ import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
 import DirectoriesPage from './pages/DirectoriesPage';
 import UsersPage from './pages/UsersPage';
+import TasksPage from './pages/TasksPage';
 
 interface SidebarItemProps {
   to: string;
@@ -38,7 +40,6 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
-      {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-xl z-20">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-xl font-bold text-blue-400 tracking-wider">1C CRM</h1>
@@ -47,6 +48,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
         
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
           <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+          <SidebarItem to="/tasks" icon={ClipboardList} label="Tasks & Issues" />
           <SidebarItem to="/clients" icon={Users} label="Clients" />
           <SidebarItem to="/directories" icon={BookOpen} label="Directories" />
           {user.role === 'admin' && (
@@ -71,7 +73,6 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto relative">
         <div className="p-8 max-w-7xl mx-auto">
           {children}
@@ -88,27 +89,12 @@ const App: React.FC = () => {
         <HashRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            
-            <Route path="/dashboard" element={
-              <PrivateLayout><DashboardPage /></PrivateLayout>
-            } />
-            
-            <Route path="/clients" element={
-              <PrivateLayout><ClientsPage /></PrivateLayout>
-            } />
-            
-            <Route path="/clients/:id" element={
-              <PrivateLayout><ClientDetailPage /></PrivateLayout>
-            } />
-
-            <Route path="/directories" element={
-              <PrivateLayout><DirectoriesPage /></PrivateLayout>
-            } />
-
-            <Route path="/users" element={
-              <PrivateLayout><UsersPage /></PrivateLayout>
-            } />
-
+            <Route path="/dashboard" element={<PrivateLayout><DashboardPage /></PrivateLayout>} />
+            <Route path="/tasks" element={<PrivateLayout><TasksPage /></PrivateLayout>} />
+            <Route path="/clients" element={<PrivateLayout><ClientsPage /></PrivateLayout>} />
+            <Route path="/clients/:id" element={<PrivateLayout><ClientDetailPage /></PrivateLayout>} />
+            <Route path="/directories" element={<PrivateLayout><DirectoriesPage /></PrivateLayout>} />
+            <Route path="/users" element={<PrivateLayout><UsersPage /></PrivateLayout>} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </HashRouter>

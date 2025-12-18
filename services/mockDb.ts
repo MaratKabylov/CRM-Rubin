@@ -1,10 +1,10 @@
 
 import { 
   User, Client, Contact, Contract, Database1C, 
-  ActivitySphere, LeadSource, Organization, Configuration, ConfigVersion, HistoryLog 
+  ActivitySphere, LeadSource, Organization, Configuration, ConfigVersion, HistoryLog,
+  Task, TaskComment
 } from '../types';
 
-// Initial Seed Data
 const seedUsers: User[] = [
   { id: 'u1', name: 'Administrator', email: 'admin@crm.local', password: 'admin', role: 'admin' },
   { id: 'u2', name: 'Manager', email: 'manager@crm.local', password: 'user', role: 'user' },
@@ -67,53 +67,62 @@ const seedContacts: Contact[] = [
     phone: '+79990001122',
     email: 'john@techstore.local',
     rating: 4,
-    rustdesk_id: '111 222 333',
-    anydesk_id: '444 555 666'
   }
 ];
 
 const seedContracts: Contract[] = [
   {
-    id: 'cnt1',
+    id: 'con1',
     client_id: 'cl1',
     organization_id: 'o1',
-    contract_number: 'TS-2023-01',
-    title: 'Main Support Contract',
+    contract_number: 'CNT-2023-001',
+    title: 'Main Service Agreement',
     start_date: '2023-01-01',
-    end_date: '2023-12-31',
+    end_date: '2024-12-31',
     is_signed: true,
     its_active: true,
-    minutes_included: 600,
-    its_login: 'user1',
-    its_password: 'pwd',
-    its_expiration_date: '2023-12-31'
+    minutes_included: 60
   }
 ];
 
 const seedDatabases: Database1C[] = [
   {
     id: 'db1',
-    client_id: 'cl1',
-    name: 'TechStore Accounting',
-    reg_number: '8000123123',
+    name: 'Accounting_Main',
+    reg_number: '800123456',
     config_id: 'c1',
-    version_id: 'v1',
-    db_admin: 'admin',
-    db_password: '123',
     its_supported: true,
     work_mode: 'file',
-    state: 'full_support'
+    state: 'full_support',
+    client_id: 'cl1'
   }
 ];
 
-const seedHistory: HistoryLog[] = [
-    {
-        id: 'h1', entity_type: 'client', entity_id: 'cl1', parent_client_id: 'cl1',
-        user_name: 'Administrator', action: 'create', details: 'Created client TechStore', timestamp: new Date().toISOString()
-    }
+const seedTasks: Task[] = [
+  {
+    id: 't1',
+    task_no: 1,
+    client_id: 'cl1',
+    contact_id: 'ct1',
+    type: 'consultation',
+    priority: 'high',
+    status: 'open',
+    title: 'Update Accounting Rules',
+    description: 'The client requested a consultation on new tax rules implementation.',
+    author_id: 'u1',
+    performer_ids: ['u2'],
+    observer_ids: ['u1'],
+    tags: ['tax', 'consult'],
+    created_at: new Date().toISOString(),
+    checklist: [
+      { id: 'i1', text: 'Read legislation', is_done: true },
+      { id: 'i2', text: 'Call client', is_done: false }
+    ],
+    attachments: []
+  }
 ];
 
-// Helper to manage local storage
+// LocalStorage helpers
 const getStorage = <T>(key: string, seed: T[]): T[] => {
   const stored = localStorage.getItem(`crm_${key}`);
   if (stored) return JSON.parse(stored);
@@ -125,7 +134,6 @@ const setStorage = <T>(key: string, data: T[]) => {
   localStorage.setItem(`crm_${key}`, JSON.stringify(data));
 };
 
-// Generic CRUD Manager
 class Collection<T extends { id: string }> {
   private key: string;
   private items: T[];
@@ -173,7 +181,6 @@ class Collection<T extends { id: string }> {
   }
 }
 
-// Singletons
 export const db = {
   users: new Collection<User>('users', seedUsers),
   activitySpheres: new Collection<ActivitySphere>('spheres', seedActivitySpheres),
@@ -185,5 +192,7 @@ export const db = {
   contacts: new Collection<Contact>('contacts', seedContacts),
   contracts: new Collection<Contract>('contracts', seedContracts),
   databases: new Collection<Database1C>('databases', seedDatabases),
-  history: new Collection<HistoryLog>('history', seedHistory),
+  history: new Collection<HistoryLog>('history', []),
+  tasks: new Collection<Task>('tasks', seedTasks),
+  comments: new Collection<TaskComment>('task_comments', []),
 };

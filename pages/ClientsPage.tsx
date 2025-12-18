@@ -1,12 +1,13 @@
+
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Building2, User, X } from 'lucide-react';
+import { Search, Plus, Building2, User, X, Star } from 'lucide-react';
 import { Client } from '../types';
 import StarRating from '../components/StarRating';
 
 const ClientsPage: React.FC = () => {
-  const { clients, users, spheres, sources, addClient } = useData();
+  const { clients, users, spheres, sources, addClient, getClientStats } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -77,6 +78,8 @@ const ClientsPage: React.FC = () => {
         {filtered.map(client => {
           const owner = users.find(u => u.id === client.owner_id);
           const sphere = spheres.find(s => s.id === client.activity_id);
+          const stats = getClientStats(client.id);
+          
           return (
             <Link 
               to={`/clients/${client.id}`} 
@@ -87,11 +90,14 @@ const ClientsPage: React.FC = () => {
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition">
                   <Building2 size={24} />
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col items-end gap-1">
                    {client.is_gov && (
-                     <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-medium">GOV</span>
+                     <span className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">GOV</span>
                    )}
-                   <StarRating rating={client.rating || 0} size={14} />
+                   <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                        <Star size={12} className="text-yellow-400 fill-yellow-400"/>
+                        <span className="text-xs font-bold text-slate-700">{stats.avgRating > 0 ? stats.avgRating : '—'}</span>
+                   </div>
                 </div>
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-1">{client.short_name}</h3>
@@ -99,16 +105,16 @@ const ClientsPage: React.FC = () => {
               
               <div className="space-y-2 text-sm text-slate-600 flex-1">
                 <div className="flex items-center space-x-2">
-                  <span className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-xs">@</span>
-                  <span>{client.email || 'No email'}</span>
+                  <span className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold">@</span>
+                  <span className="truncate">{client.email || 'No email'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                   <User size={14} />
+                   <User size={14} className="text-slate-400"/>
                    <span className="text-xs">{owner?.name || 'Unknown Owner'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                   <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">
-                     {sphere?.name || 'Unknown Sphere'}
+                   <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold uppercase">
+                     {sphere?.name || 'Other'}
                    </span>
                 </div>
               </div>
@@ -116,7 +122,7 @@ const ClientsPage: React.FC = () => {
               {client.tags && client.tags.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
                       {client.tags.slice(0, 3).map(tag => (
-                          <span key={tag} className="text-xs bg-slate-50 text-slate-500 px-2 py-1 rounded border border-slate-100">
+                          <span key={tag} className="text-[10px] bg-slate-50 text-slate-500 px-2 py-1 rounded border border-slate-100 font-medium">
                               {tag}
                           </span>
                       ))}
@@ -136,28 +142,15 @@ const ClientsPage: React.FC = () => {
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                  <div className="flex-1 mr-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="label">Short Name</label>
-                          <input required className="input" value={formData.short_name} onChange={e => setFormData({...formData, short_name: e.target.value})} />
-                        </div>
-                        <div>
-                          <label className="label">BIN</label>
-                          <input className="input" value={formData.bin} onChange={e => setFormData({...formData, bin: e.target.value})} />
-                        </div>
-                      </div>
-                  </div>
-                  <div>
-                      <label className="label">Rating</label>
-                      <StarRating 
-                        rating={formData.rating || 0} 
-                        size={24} 
-                        editable 
-                        onRatingChange={(r) => setFormData({...formData, rating: r})}
-                      />
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Short Name</label>
+                  <input required className="input" value={formData.short_name} onChange={e => setFormData({...formData, short_name: e.target.value})} />
+                </div>
+                <div>
+                  <label className="label">BIN</label>
+                  <input className="input" value={formData.bin} onChange={e => setFormData({...formData, bin: e.target.value})} />
+                </div>
               </div>
 
               <div>

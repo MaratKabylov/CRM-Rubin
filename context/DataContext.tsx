@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+
+import React, { createContext, useContext, useState, useMemo } from 'react';
 import { db } from '../services/mockDb';
 import * as T from '../types';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
-  // Data arrays
   users: T.User[];
   clients: T.Client[];
   spheres: T.ActivitySphere[];
@@ -16,11 +16,11 @@ interface DataContextType {
   contracts: T.Contract[];
   databases: T.Database1C[];
   historyLogs: T.HistoryLog[];
+  tasks: T.Task[];
+  taskComments: T.TaskComment[];
   
-  // Refresh triggers
   refreshData: () => void;
 
-  // CRUD Helpers
   addClient: (data: Omit<T.Client, 'id'>) => void;
   updateClient: (id: string, data: Partial<T.Client>) => void;
   deleteClient: (id: string) => void;
@@ -28,6 +28,11 @@ interface DataContextType {
   addContact: (data: Omit<T.Contact, 'id'>) => void;
   updateContact: (id: string, data: Partial<T.Contact>) => void;
   deleteContact: (id: string) => void;
+  
+  addTask: (data: Omit<T.Task, 'id' | 'created_at' | 'task_no'>) => void;
+  updateTask: (id: string, data: Partial<T.Task>) => void;
+  deleteTask: (id: string) => void;
+  addComment: (taskId: string, text: string) => void;
   
   addContract: (data: Omit<T.Contract, 'id'>) => void;
   updateContract: (id: string, data: Partial<T.Contract>) => void;
@@ -40,9 +45,10 @@ interface DataContextType {
   addUser: (data: Omit<T.User, 'id'>) => void;
   deleteUser: (id: string) => void;
   
-  // Generic helper for directories
   addDirectoryItem: (type: 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions', data: any) => void;
   deleteDirectoryItem: (type: 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions', id: string) => void;
+  
+  getClientStats: (clientId: string) => { avgRating: number; taskCount: number };
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -53,18 +59,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshData = () => setTrigger(prev => prev + 1);
 
-  // Helper to calculate diff and log
-  const logAndExecute = <T extends { id: string }>(
+  const logAndExecute = <Item extends { id: string }>(
     entityType: T.EntityType,
-    parentId: string | ((item: T) => string), // Parent Client ID
+    parentId: string | ((item: Item) => string),
     action: T.ActionType,
-    operation: () => T | null | boolean,
-    oldItem?: T,
-    newItemData?: Partial<T>
+    operation: () => Item | null | boolean,
+    oldItem?: Item,
+    newItemData?: Partial<Item>
   ) => {
     const result = operation();
-    
-    // Only log if successful
     if (result) {
         let details = '';
         const userName = user?.name || 'System';
@@ -73,34 +76,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let finalParentId = '';
 
         if (action === 'create') {
-            const created = result as T;
+            const created = result as Item;
             entityId = created.id;
             finalParentId = typeof parentId === 'function' ? parentId(created) : parentId;
             details = `Created new ${entityType}`;
         } else if (action === 'delete') {
-             entityId = (oldItem as T).id;
-             finalParentId = typeof parentId === 'function' ? parentId(oldItem as T) : parentId;
+             entityId = (oldItem as Item).id;
+             finalParentId = typeof parentId === 'function' ? parentId(oldItem as Item) : parentId;
              details = `Deleted ${entityType}`;
         } else if (action === 'update' && oldItem && newItemData) {
             entityId = oldItem.id;
             finalParentId = typeof parentId === 'function' ? parentId(oldItem) : parentId;
-            
-            const changes: string[] = [];
-            (Object.keys(newItemData) as Array<keyof T>).forEach(key => {
-                if (key === 'id') return;
-                const oldVal = oldItem[key];
-                const newVal = newItemData[key];
-                // Simple equality check, can be expanded for arrays/objects
-                if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-                    // Try to format nicely
-                    let displayOld = oldVal?.toString() || 'empty';
-                    let displayNew = newVal?.toString() || 'empty';
-                    if (displayOld.length > 20) displayOld = '...';
-                    if (displayNew.length > 20) displayNew = '...';
-                    changes.push(`${String(key)}: ${displayOld} -> ${displayNew}`);
-                }
-            });
-            details = changes.length > 0 ? `Updated: ${changes.join(', ')}` : 'Updated (No changes detected)';
+            details = `Updated ${entityType}`;
         }
 
         db.history.create({
@@ -112,10 +99,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             details: details,
             timestamp: timestamp
         });
-        
         refreshData();
     }
     return result;
+  };
+
+  const getClientStats = (clientId: string) => {
+    const clientTasks = db.tasks.getAll().filter(t => t.client_id === clientId && t.status === 'done' && t.completion_rating);
+    if (clientTasks.length === 0) return { avgRating: 0, taskCount: 0 };
+    const sum = clientTasks.reduce((acc, t) => acc + (t.completion_rating || 0), 0);
+    return { 
+        avgRating: parseFloat((sum / clientTasks.length).toFixed(1)), 
+        taskCount: clientTasks.length 
+    };
   };
 
   const value: DataContextType = {
@@ -129,9 +125,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     contacts: db.contacts.getAll(),
     contracts: db.contracts.getAll(),
     databases: db.databases.getAll(),
+    tasks: db.tasks.getAll(),
+    taskComments: db.comments.getAll(),
     historyLogs: db.history.getAll().sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
 
     refreshData,
+    getClientStats,
 
     addClient: (data) => logAndExecute('client', (c) => c.id, 'create', () => db.clients.create(data)),
     updateClient: (id, data) => {
@@ -141,6 +140,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     deleteClient: (id) => {
         const old = db.clients.getById(id);
         if(old) logAndExecute('client', id, 'delete', () => db.clients.delete(id), old);
+    },
+
+    addTask: (data) => {
+        const currentTasks = db.tasks.getAll();
+        const maxNo = currentTasks.reduce((max, task) => Math.max(max, task.task_no || 0), 0);
+        return logAndExecute('task', data.client_id, 'create', () => 
+            db.tasks.create({ 
+                ...data, 
+                task_no: maxNo + 1, 
+                created_at: new Date().toISOString() 
+            })
+        );
+    },
+    updateTask: (id, data) => {
+        const old = db.tasks.getById(id);
+        if(old) logAndExecute('task', old.client_id, 'update', () => db.tasks.update(id, data), old, data);
+    },
+    deleteTask: (id) => {
+        const old = db.tasks.getById(id);
+        if(old) logAndExecute('task', old.client_id, 'delete', () => db.tasks.delete(id), old);
+    },
+    addComment: (taskId, text) => {
+        const task = db.tasks.getById(taskId);
+        if (!task) return;
+        db.comments.create({
+            task_id: taskId,
+            user_id: user?.id || 'sys',
+            user_name: user?.name || 'System',
+            text,
+            timestamp: new Date().toISOString()
+        });
+        refreshData();
     },
 
     addContact: (data) => logAndExecute('contact', data.client_id, 'create', () => db.contacts.create(data)),
