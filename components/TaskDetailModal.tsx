@@ -6,7 +6,8 @@ import {
   X, CheckCircle, MessageSquare, Send, Clock, User, 
   Building, Database as DbIcon, Star, Calendar, 
   Tag as TagIcon, Eye, Edit2, AlertCircle,
-  Phone, Mail, Layers, History as HistoryIcon
+  Phone, Mail, Layers, History as HistoryIcon,
+  Timer, Plus
 } from 'lucide-react';
 import { Task, TaskStatus, Priority } from '../types';
 import StarRating from './StarRating';
@@ -27,14 +28,20 @@ const PriorityBadge = ({ p }: { p: Priority }) => {
 };
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, onClose }) => {
-  const { tasks, clients, contacts, databases, users, taskComments, historyLogs, queues, updateTask, addComment } = useData();
+  const { tasks, clients, contacts, databases, users, taskComments, historyLogs, queues, updateTask, addComment, addTimeLog } = useData();
   const { user: currentUser } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
-  const [activeSubTab, setActiveSubTab] = useState<'comments' | 'history'>('comments');
+  const [contactRating, setContactRating] = useState(0);
+  const [activeSubTab, setActiveSubTab] = useState<'comments' | 'history' | 'time'>('comments');
+
+  // Time logging state
+  const [logTimeMinutes, setLogTimeMinutes] = useState<string>('');
+  const [logTimeComment, setLogTimeComment] = useState<string>('');
+  const [logTimeDate, setLogTimeDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   // Get live data
   const task = tasks.find(t => t.id === initialTask.id) || initialTask;
@@ -47,6 +54,13 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
   
   const performers = users.filter(u => task.performer_ids?.includes(u.id));
   const observers = users.filter(u => task.observer_ids?.includes(u.id));
+
+  const totalTimeMinutes = (task.time_logs || []).reduce((acc, log) => acc + (log.duration_minutes || 0), 0);
+  const formatMinutes = (m: number) => {
+    const hours = Math.floor(m / 60);
+    const mins = m % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
 
   const isClosedStatus = (status: string) => {
     const s = status.toLowerCase();
@@ -62,9 +76,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
   };
 
   const handleCompleteWithRating = () => {
-      // Find the "Closed" status from the queue's list
       const closedStatus = queue?.statuses.find(isClosedStatus) || queue?.statuses[queue.statuses.length - 1] || 'Closed';
-      updateTask(task.id, { status: closedStatus, completion_rating: rating });
+      updateTask(task.id, { 
+          status: closedStatus, 
+          completion_rating: rating,
+          contact_rating: contactRating 
+      });
       setShowRating(false);
       onClose();
   };
@@ -74,6 +91,19 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
       if (!commentText.trim()) return;
       addComment(task.id, commentText);
       setCommentText('');
+  };
+
+  const handleAddTimeLog = (e: React.FormEvent) => {
+    e.preventDefault();
+    const mins = parseInt(logTimeMinutes);
+    if (!mins || isNaN(mins)) return;
+    addTimeLog(task.id, {
+      duration_minutes: mins,
+      comment: logTimeComment,
+      date: logTimeDate
+    });
+    setLogTimeMinutes('');
+    setLogTimeComment('');
   };
 
   const toggleCheck = (itemId: string) => {
@@ -164,24 +194,30 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
                     </div>
                 )}
 
-                {/* Sub-Tabs: Comments vs History */}
+                {/* Sub-Tabs: Comments vs History vs Time */}
                 <div className="pt-4 border-t border-slate-100 flex flex-col h-full">
-                    <div className="flex border-b border-slate-100 mb-4 gap-4">
+                    <div className="flex border-b border-slate-100 mb-4 gap-4 overflow-x-auto pb-1">
                         <button 
                             onClick={() => setActiveSubTab('comments')}
-                            className={`pb-2 px-1 text-xs font-bold uppercase tracking-widest transition-colors ${activeSubTab === 'comments' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`pb-2 px-1 text-xs font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${activeSubTab === 'comments' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             Communication ({comments.length})
                         </button>
                         <button 
-                            onClick={() => setActiveSubTab('history')}
-                            className={`pb-2 px-1 text-xs font-bold uppercase tracking-widest transition-colors ${activeSubTab === 'history' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            onClick={() => setActiveSubTab('time')}
+                            className={`pb-2 px-1 text-xs font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${activeSubTab === 'time' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
-                            Change History ({logs.length})
+                            Time Tracking ({formatMinutes(totalTimeMinutes)})
+                        </button>
+                        <button 
+                            onClick={() => setActiveSubTab('history')}
+                            className={`pb-2 px-1 text-xs font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${activeSubTab === 'history' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            History ({logs.length})
                         </button>
                     </div>
 
-                    {activeSubTab === 'comments' ? (
+                    {activeSubTab === 'comments' && (
                         <div className="flex flex-col gap-4">
                             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                 {comments.map(c => (
@@ -210,7 +246,88 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
                                 <button type="submit" className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20"><Send size={18}/></button>
                             </form>
                         </div>
-                    ) : (
+                    )}
+
+                    {activeSubTab === 'time' && (
+                      <div className="space-y-6">
+                        {/* Summary Card */}
+                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Total Time Logged</p>
+                            <h3 className="text-2xl font-bold text-blue-800">{formatMinutes(totalTimeMinutes)}</h3>
+                          </div>
+                          <Timer size={32} className="text-blue-200" />
+                        </div>
+
+                        {/* Log Time Form */}
+                        <form onSubmit={handleAddTimeLog} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                          <p className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Plus size={14}/> Register Effort</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-400 uppercase">Minutes</label>
+                              <input 
+                                type="number" 
+                                className="input text-sm" 
+                                placeholder="60" 
+                                value={logTimeMinutes} 
+                                onChange={e => setLogTimeMinutes(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-400 uppercase">Date</label>
+                              <input 
+                                type="date" 
+                                className="input text-sm" 
+                                value={logTimeDate} 
+                                onChange={e => setLogTimeDate(e.target.value)}
+                                required
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase">Description / Work Comment</label>
+                            <input 
+                              type="text" 
+                              className="input text-sm" 
+                              placeholder="Consultation on fixed assets..." 
+                              value={logTimeComment} 
+                              onChange={e => setLogTimeComment(e.target.value)}
+                            />
+                          </div>
+                          <button type="submit" className="btn-primary w-full text-sm py-2">Log Time</button>
+                        </form>
+
+                        {/* Logs List */}
+                        <div className="space-y-3">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Time Ledger</p>
+                          <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                            {(task.time_logs || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(log => (
+                              <div key={log.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                    {log.user_name.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold text-slate-800">{log.user_name}</span>
+                                      <span className="text-[10px] text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-100">{log.date}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 italic">{log.comment || 'General effort'}</p>
+                                  </div>
+                                </div>
+                                <div className="text-sm font-bold text-blue-700">
+                                  +{formatMinutes(log.duration_minutes)}
+                                </div>
+                              </div>
+                            ))}
+                            {(task.time_logs || []).length === 0 && <p className="text-center py-6 text-slate-400 text-xs italic">No time logs recorded.</p>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeSubTab === 'history' && (
                         <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-4 before:w-0.5 before:bg-slate-100 pl-8 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                             {logs.map((log, idx) => (
                                 <div key={log.id} className="relative">
@@ -333,20 +450,48 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
         {/* Rating Modal Overlay */}
         {showRating && (
             <div className="absolute inset-0 z-20 bg-black/60 flex items-center justify-center p-6 backdrop-blur-md">
-                <div className="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl transform animate-in zoom-in-95 duration-200">
+                <div className="bg-white rounded-2xl p-8 w-full max-w-md text-center shadow-2xl transform animate-in zoom-in-95 duration-200">
                     <div className="bg-yellow-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-100">
                         <Star size={32} className="text-yellow-500 fill-yellow-500" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">Rate the Service</h3>
-                    <p className="text-sm text-slate-500 mb-6">Please evaluate the collaboration with {client?.short_name} for this task.</p>
-                    <div className="flex justify-center mb-8">
-                        <StarRating rating={rating} editable size={32} onRatingChange={setRating} />
+                    <h3 className="text-xl font-bold text-slate-800 mb-2">Final Evaluation</h3>
+                    <p className="text-sm text-slate-500 mb-8">Please rate the interaction with the client and contact person for this task.</p>
+                    
+                    <div className="space-y-6 mb-8 text-left">
+                        {/* Company Rating */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <Building size={12}/> {client?.short_name || 'Company'} Collaboration
+                            </label>
+                            <div className="flex justify-start">
+                                <StarRating rating={rating} editable size={28} onRatingChange={setRating} />
+                            </div>
+                        </div>
+
+                        {/* Contact Rating */}
+                        {contact && (
+                            <div className="space-y-2 pt-4 border-t border-slate-50">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <User size={12}/> {contact.first_name} {contact.last_name} Interaction
+                                </label>
+                                <div className="flex justify-start">
+                                    <StarRating rating={contactRating} editable size={28} onRatingChange={setContactRating} />
+                                </div>
+                            </div>
+                        )}
                     </div>
+
                     <button 
                         onClick={handleCompleteWithRating}
                         className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30"
                     >
-                        Save Rating & Finish
+                        Save Ratings & Finish Task
+                    </button>
+                    <button 
+                        onClick={() => setShowRating(false)}
+                        className="w-full mt-3 text-slate-400 text-xs hover:text-slate-600 transition"
+                    >
+                        Go back
                     </button>
                 </div>
             </div>

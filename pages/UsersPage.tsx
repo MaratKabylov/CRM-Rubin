@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { Trash2, UserPlus, Shield } from 'lucide-react';
@@ -24,7 +25,7 @@ const UsersPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
         <Shield className="text-blue-600" /> User Management
       </h1>

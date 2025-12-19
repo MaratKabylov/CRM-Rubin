@@ -118,9 +118,10 @@ const seedContracts: Contract[] = [
     contract_number: 'CNT-2023-001',
     title: 'Main Service Agreement',
     start_date: '2023-01-01',
-    end_date: '2024-12-31',
+    end_date: '2025-12-31',
     is_signed: true,
     its_active: true,
+    its_ours: true,
     minutes_included: 60
   }
 ];
@@ -131,10 +132,10 @@ const seedDatabases: Database1C[] = [
     name: 'Accounting_Main',
     reg_number: '800123456',
     config_id: 'c1',
-    its_supported: true,
     work_mode: 'file',
     state: 'full_support',
-    client_id: 'cl1'
+    client_id: 'cl1',
+    its_supported: true
   }
 ];
 
@@ -160,7 +161,8 @@ const seedTasks: Task[] = [
       { id: 'i1', text: 'Read legislation', is_done: true },
       { id: 'i2', text: 'Call client', is_done: false }
     ],
-    attachments: []
+    attachments: [],
+    time_logs: []
   }
 ];
 

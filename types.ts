@@ -2,19 +2,30 @@
 export type Role = 'admin' | 'user';
 export type WorkMode = 'file' | 'server';
 export type DbState = 'full_support' | 'full_support_with_extensions' | 'minor_change' | 'major_change' | 'custom_solution';
-export type EntityType = 'client' | 'contact' | 'contract' | 'database' | 'task' | 'queue' | 'queue_template';
-export type ActionType = 'create' | 'update' | 'delete' | 'comment' | 'complete';
+export type EntityType = 'client' | 'contact' | 'contract' | 'database' | 'task' | 'queue' | 'queue_template' | 'time_log';
+export type ActionType = 'create' | 'update' | 'delete' | 'comment' | 'complete' | 'log_time';
 
 export type TaskType = 'consultation' | 'development' | 'request';
 export type Priority = 'low' | 'medium' | 'high';
-export type TaskStatus = string; // Now dynamic based on queue
+export type TaskStatus = string;
 
-export type QueueTemplate = string; // Changed from union to string to support dynamic templates
+export type QueueTemplate = string;
 
 export interface QueueTemplateDefinition {
   id: string;
   name: string;
   statuses: string[];
+}
+
+export interface TimeLog {
+  id: string;
+  task_id: string;
+  user_id: string;
+  user_name: string;
+  duration_minutes: number;
+  comment: string;
+  date: string;
+  timestamp: string;
 }
 
 export interface HistoryLog {
@@ -108,6 +119,7 @@ export interface Contract {
   comment?: string;
   is_signed: boolean;
   its_active: boolean;
+  its_ours: boolean;
   its_expiration_date?: string;
   its_login?: string;
   its_password?: string;
@@ -122,17 +134,17 @@ export interface Database1C {
   version_id?: string;
   db_admin?: string;
   db_password?: string;
-  its_supported: boolean;
   work_mode: WorkMode;
   state: DbState;
   client_id: string;
+  its_supported: boolean;
 }
 
 export interface TaskQueue {
   id: string;
   name: string;
   prefix: string;
-  template: string; // Refers to QueueTemplateDefinition.id or name
+  template: string;
   statuses: string[];
 }
 
@@ -161,7 +173,7 @@ export interface Task {
   id: string;
   queue_id: string;
   queue_task_no: number;
-  task_no: number; // Legacy, keep for compatibility or remove
+  task_no: number;
   client_id: string;
   contact_id?: string;
   db_id?: string;
@@ -179,4 +191,6 @@ export interface Task {
   checklist: ChecklistItem[];
   attachments: TaskAttachment[];
   completion_rating?: number;
+  contact_rating?: number;
+  time_logs: TimeLog[];
 }

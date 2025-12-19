@@ -106,46 +106,46 @@ const DirectoriesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800">Directories Management</h1>
+      <h1 className="text-2xl font-bold text-slate-800">Directories</h1>
       
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar Nav */}
-        <div className="w-full md:w-64 flex flex-col space-y-2">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Sidebar Nav - Horizontal on mobile, vertical on large screens */}
+        <div className="w-full lg:w-64 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-2 lg:pb-0">
           {[
-            { id: 'spheres', label: 'Activity Spheres' },
-            { id: 'sources', label: 'Lead Sources' },
-            { id: 'orgs', label: 'Organizations' },
-            { id: 'configs', label: '1C Configurations' },
-            { id: 'versions', label: 'Config Versions' },
-            { id: 'queue_templates', label: 'Queue Templates' },
+            { id: 'spheres', label: 'Spheres' },
+            { id: 'sources', label: 'Sources' },
+            { id: 'orgs', label: 'Orgs' },
+            { id: 'configs', label: '1C Configs' },
+            { id: 'versions', label: 'Versions' },
+            { id: 'queue_templates', label: 'Templates' },
           ].map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as DirectoryType)}
-              className={`text-left px-4 py-3 rounded-lg flex items-center justify-between transition ${
+              className={`text-left px-4 py-3 rounded-lg flex items-center justify-between transition flex-shrink-0 lg:flex-shrink ${
                 activeTab === item.id 
                   ? 'bg-blue-600 text-white shadow-md' 
                   : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <span className="font-medium text-sm">{item.label}</span>
-              {activeTab === item.id ? <List size={16} /> : <Layers size={16} className="text-slate-400 opacity-50"/>}
+              <span className="font-medium text-sm whitespace-nowrap">{item.label}</span>
+              {activeTab === item.id ? <List size={16} className="hidden lg:block ml-2" /> : <Layers size={16} className="hidden lg:block ml-2 text-slate-400 opacity-50"/>}
             </button>
           ))}
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
            <h2 className="text-xl font-bold text-slate-800 mb-6 capitalize border-b pb-2">
              {getLabel()}
            </h2>
 
            <form onSubmit={handleAdd} className="space-y-4 mb-8">
-             <div className="flex gap-4">
+             <div className="flex flex-col sm:flex-row gap-4">
                {activeTab === 'versions' ? (
-                  <>
+                  <div className="flex flex-col gap-4 flex-1">
                      <select 
-                        className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                         required
                         value={verConfigId}
                         onChange={(e) => setVerConfigId(e.target.value)}
@@ -153,34 +153,36 @@ const DirectoriesPage: React.FC = () => {
                          <option value="">Select Configuration...</option>
                          {configs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                      </select>
-                     <input 
-                       type="text" 
-                       className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                       placeholder="Release (e.g. 3.0.1.1)"
-                       value={verRelease}
-                       onChange={(e) => setVerRelease(e.target.value)}
-                       required
-                     />
-                     <input 
-                       type="date"
-                       className="w-40 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                       value={verDate}
-                       onChange={(e) => setVerDate(e.target.value)}
-                       required
-                     />
-                  </>
+                     <div className="flex flex-col sm:flex-row gap-4">
+                        <input 
+                          type="text" 
+                          className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                          placeholder="Release (e.g. 3.0.1.1)"
+                          value={verRelease}
+                          onChange={(e) => setVerRelease(e.target.value)}
+                          required
+                        />
+                        <input 
+                          type="date"
+                          className="w-full sm:w-40 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                          value={verDate}
+                          onChange={(e) => setVerDate(e.target.value)}
+                          required
+                        />
+                     </div>
+                  </div>
                ) : (
                   <input 
                     type="text" 
                     className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder={activeTab === 'queue_templates' ? "Template Name (e.g. Customer Support)" : "Add new item name..."}
+                    placeholder={activeTab === 'queue_templates' ? "Template Name" : "Item name..."}
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
                     required
                   />
                )}
                
-               <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 flex-shrink-0">
+               <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center justify-center gap-2 flex-shrink-0">
                  <Plus size={18} /> Add
                </button>
              </div>
@@ -195,11 +197,11 @@ const DirectoriesPage: React.FC = () => {
                       {templateStatuses.map((s, idx) => (
                          <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded border border-slate-100 group shadow-sm">
                             <input 
-                               className="flex-1 text-xs outline-none focus:border-b focus:border-blue-400"
+                               className="flex-1 text-xs outline-none focus:border-b focus:border-blue-400 min-w-0"
                                value={s}
                                onChange={(e) => updateStatusName(idx, e.target.value)}
                             />
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
                                <button type="button" disabled={idx===0} onClick={()=>moveStatus(idx, 'up')} className="p-0.5 text-slate-400 hover:text-blue-500"><ChevronUp size={12}/></button>
                                <button type="button" disabled={idx===templateStatuses.length-1} onClick={()=>moveStatus(idx, 'down')} className="p-0.5 text-slate-400 hover:text-blue-500"><ChevronDown size={12}/></button>
                                <button type="button" onClick={()=>removeStatus(idx)} className="p-0.5 text-slate-400 hover:text-red-500"><X size={12}/></button>
@@ -215,22 +217,26 @@ const DirectoriesPage: React.FC = () => {
              {getData().map((item: any) => (
                <div key={item.id} className="flex flex-col p-3 bg-slate-50 rounded border border-slate-100 group">
                  <div className="flex items-center justify-between">
-                    <span className="text-slate-700 font-bold">
+                    <span className="text-slate-700 font-bold min-w-0 flex-1 mr-2">
                       {activeTab === 'versions' ? (
-                          <div className="flex items-center gap-3">
-                              <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-xs font-semibold">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                              <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-semibold w-fit truncate max-w-full">
                                   {configs.find(c => c.id === item.config_id)?.name || 'Unknown Config'}
                               </span>
-                              <span className="font-mono text-blue-700">{item.release}</span>
-                              <span className="text-xs text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                  <Calendar size={12}/> {item.date}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-blue-700 text-xs">{item.release}</span>
+                                <span className="text-[10px] text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                    <Calendar size={10}/> {item.date}
+                                </span>
+                              </div>
                           </div>
-                      ) : item.name}
+                      ) : (
+                        <span className="truncate block">{item.name}</span>
+                      )}
                     </span>
                     <button 
-                      onClick={() => openConfirm('Delete Item', 'Are you sure you want to delete this item? This action cannot be undone.', () => deleteDirectoryItem(activeTab, item.id))}
-                      className="text-slate-300 hover:text-red-500 transition"
+                      onClick={() => openConfirm('Delete Item', 'Are you sure?', () => deleteDirectoryItem(activeTab, item.id))}
+                      className="text-slate-300 hover:text-red-500 transition p-1 flex-shrink-0"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -247,7 +253,7 @@ const DirectoriesPage: React.FC = () => {
                  )}
                </div>
              ))}
-             {getData().length === 0 && <p className="text-slate-400 italic">No items found.</p>}
+             {getData().length === 0 && <p className="text-slate-400 italic text-sm">No items found.</p>}
            </div>
         </div>
       </div>

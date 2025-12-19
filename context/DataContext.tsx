@@ -39,10 +39,11 @@ interface DataContextType {
   updateQueueTemplate: (id: string, data: Partial<T.QueueTemplateDefinition>) => void;
   deleteQueueTemplate: (id: string) => void;
 
-  addTask: (data: Omit<T.Task, 'id' | 'created_at' | 'task_no' | 'queue_task_no'>) => void;
+  addTask: (data: Omit<T.Task, 'id' | 'created_at' | 'task_no' | 'queue_task_no' | 'time_logs'>) => void;
   updateTask: (id: string, data: Partial<T.Task>) => void;
   deleteTask: (id: string) => void;
   addComment: (taskId: string, text: string) => void;
+  addTimeLog: (taskId: string, data: { duration_minutes: number; comment: string; date: string }) => void;
   
   addContract: (data: Omit<T.Contract, 'id'>) => void;
   updateContract: (id: string, data: Partial<T.Contract>) => void;
@@ -111,6 +112,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
                 details = `Updated ${entityType}`;
             }
+        } else if (action === 'log_time') {
+          entityId = (oldItem as Item).id;
+          finalParentId = typeof parentId === 'function' ? parentId(oldItem as Item) : parentId;
+          details = `Logged time on task`;
         }
 
         db.history.create({
@@ -200,7 +205,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...data, 
                 task_no: maxNo + 1,
                 queue_task_no: maxQueueNo + 1, 
-                created_at: new Date().toISOString() 
+                created_at: new Date().toISOString(),
+                time_logs: []
             })
         );
     },
@@ -223,6 +229,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             timestamp: new Date().toISOString()
         });
         refreshData();
+    },
+    addTimeLog: (taskId, data) => {
+        const task = db.tasks.getById(taskId);
+        if (!task) return;
+        
+        const newLog: T.TimeLog = {
+          id: Math.random().toString(36).substr(2, 9),
+          task_id: taskId,
+          user_id: user?.id || 'sys',
+          user_name: user?.name || 'System',
+          duration_minutes: data.duration_minutes,
+          comment: data.comment,
+          date: data.date,
+          timestamp: new Date().toISOString()
+        };
+
+        const updatedTimeLogs = [...(task.time_logs || []), newLog];
+        logAndExecute('task', task.client_id, 'log_time', () => db.tasks.update(taskId, { time_logs: updatedTimeLogs }), task);
     },
 
     addContact: (data) => logAndExecute('contact', data.client_id, 'create', () => db.contacts.create(data)),

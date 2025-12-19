@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, Users, Database, BookOpen, Settings, LogOut, ClipboardList, Layers } from 'lucide-react';
+import { LayoutDashboard, Users, Database, BookOpen, Settings, LogOut, ClipboardList, Layers, Menu, X } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import LoginPage from './pages/LoginPage';
@@ -17,13 +17,18 @@ interface SidebarItemProps {
   to: string;
   icon: React.ElementType;
   label: string;
+  onClick?: () => void;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon: Icon, label }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon: Icon, label, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname.startsWith(to);
   return (
-    <Link to={to} className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+    <Link 
+      to={to} 
+      onClick={onClick}
+      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+    >
       <Icon size={20} />
       <span className="font-medium">{label}</span>
     </Link>
@@ -36,32 +41,53 @@ interface PrivateLayoutProps {
 
 const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   if (!user) return <Navigate to="/login" />;
 
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
-      <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-xl z-20">
-        <div className="p-6 border-b border-slate-800">
-          <h1 className="text-xl font-bold text-blue-400 tracking-wider">1C CRM</h1>
-          <p className="text-xs text-slate-500 mt-1">Service Management</p>
+    <div className="flex h-screen bg-slate-100 overflow-hidden relative">
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col shadow-xl z-40 transition-transform duration-300 transform
+        lg:relative lg:translate-x-0 
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-blue-400 tracking-wider">1C CRM</h1>
+            <p className="text-xs text-slate-500 mt-1">Service Management</p>
+          </div>
+          <button className="lg:hidden text-slate-400" onClick={() => setIsSidebarOpen(false)}>
+            <X size={24} />
+          </button>
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-          <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <SidebarItem to="/queues" icon={Layers} label="Queues" />
-          <SidebarItem to="/tasks" icon={ClipboardList} label="Tasks & Issues" />
-          <SidebarItem to="/clients" icon={Users} label="Clients" />
-          <SidebarItem to="/directories" icon={BookOpen} label="Directories" />
+          <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/queues" icon={Layers} label="Queues" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/tasks" icon={ClipboardList} label="Tasks & Issues" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/clients" icon={Users} label="Clients" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/directories" icon={BookOpen} label="Directories" onClick={() => setIsSidebarOpen(false)} />
           {user.role === 'admin' && (
-            <SidebarItem to="/users" icon={Settings} label="Users & Access" />
+            <SidebarItem to="/users" icon={Settings} label="Users & Access" onClick={() => setIsSidebarOpen(false)} />
           )}
         </nav>
 
         <div className="p-4 border-t border-slate-800 bg-slate-900">
           <div className="flex items-center justify-between mb-4 px-2">
             <div>
-              <p className="text-sm font-semibold text-white">{user.name}</p>
+              <p className="text-sm font-semibold text-white truncate max-w-[140px]">{user.name}</p>
               <p className="text-xs text-slate-400 capitalize">{user.role}</p>
             </div>
           </div>
@@ -75,11 +101,27 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto relative">
-        <div className="p-8 max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile Header */}
+        <header className="lg:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+             <button onClick={toggleSidebar} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                <Menu size={24} />
+             </button>
+             <h2 className="font-bold text-slate-800">1C CRM</h2>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
+            {user.name.charAt(0)}
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto bg-slate-100">
+          <div className="p-4 md:p-8 w-full">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

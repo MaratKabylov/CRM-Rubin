@@ -8,9 +8,10 @@ import { Task, TaskType, Priority, TaskQueue } from '../types';
 interface TaskModalProps {
   onClose: () => void;
   initialTask?: Task;
+  defaultQueueId?: string;
 }
 
-const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
+const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask, defaultQueueId }) => {
   const { clients, contacts, databases, users, queues, addTask, updateTask } = useData();
   const { user: currentUser } = useAuth();
 
@@ -21,7 +22,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
     priority: 'medium',
     status: '',
     client_id: '',
-    queue_id: queues[0]?.id || '',
+    queue_id: defaultQueueId || queues[0]?.id || '',
     performer_ids: [],
     observer_ids: [],
     tags: [],
@@ -34,7 +35,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
 
   const selectedQueue = queues.find(q => q.id === formData.queue_id);
   
-  // Set default status if missing and queue selected
   useEffect(() => {
     if (selectedQueue && !formData.status) {
         setFormData(prev => ({ ...prev, status: selectedQueue.statuses[0] }));
@@ -102,10 +102,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
     const u = users.find(user => user.id === id);
     if (!u) return null;
     return (
-      <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-100 mb-1">
+      <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] md:text-xs border border-blue-100 mb-1">
         <UserIcon size={10} />
         {u.name}
-        <button type="button" onClick={onRemove} className="text-blue-400 hover:text-red-500 ml-1">
+        <button type="button" onClick={onRemove} className="text-blue-400 hover:text-red-500 ml-1 p-0.5">
           <X size={12} />
         </button>
       </span>
@@ -113,40 +113,40 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0 z-10">
-          <h2 className="text-xl font-bold text-slate-800">{initialTask ? 'Edit Task' : 'New Task'}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 md:p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-auto">
+        <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl sticky top-0 z-10">
+          <h2 className="text-lg md:text-xl font-bold text-slate-800">{initialTask ? 'Edit Task' : 'New Task'}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2"><X size={20}/></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
             <div className="space-y-4">
-              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col gap-3">
+              <div className="bg-blue-50/50 p-3 md:p-4 rounded-xl border border-blue-100 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                    <Layers size={16} className="text-blue-600"/>
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Work Context</span>
+                    <Layers size={14} className="text-blue-600"/>
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Work Context</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label className="label">Queue</label>
                         <select 
                             required 
-                            className="input bg-white" 
+                            className="input bg-white text-sm" 
                             value={formData.queue_id} 
                             onChange={e => setFormData({...formData, queue_id: e.target.value, status: ''})}
                             disabled={!!initialTask}
                         >
                             <option value="">Select queue...</option>
-                            {queues.map(q => <option key={q.id} value={q.id}>{q.name} ({q.prefix})</option>)}
+                            {queues.map(q => <option key={q.id} value={q.id}>{q.name}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="label">Status</label>
                         <select 
                             required 
-                            className="input bg-white" 
+                            className="input bg-white text-sm" 
                             value={formData.status} 
                             onChange={e => setFormData({...formData, status: e.target.value})}
                         >
@@ -161,8 +161,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
                 <label className="label">Task Title</label>
                 <input 
                   required 
-                  className="input" 
-                  placeholder="e.g. Update 1C:Accounting rules"
+                  className="input text-sm" 
+                  placeholder="Task title..."
                   value={formData.title} 
                   onChange={e => setFormData({...formData, title: e.target.value})} 
                 />
@@ -172,7 +172,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
                 <label className="label">Client</label>
                 <select 
                   required 
-                  className="input" 
+                  className="input text-sm" 
                   value={formData.client_id} 
                   onChange={e => setFormData({...formData, client_id: e.target.value, contact_id: '', db_id: ''})}
                 >
@@ -181,11 +181,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Contact Person</label>
+                  <label className="label">Contact</label>
                   <select 
-                    className="input" 
+                    className="input text-sm" 
                     disabled={!formData.client_id}
                     value={formData.contact_id} 
                     onChange={e => setFormData({...formData, contact_id: e.target.value})}
@@ -197,7 +197,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
                 <div>
                   <label className="label">1C Database</label>
                   <select 
-                    className="input" 
+                    className="input text-sm" 
                     disabled={!formData.client_id}
                     value={formData.db_id} 
                     onChange={e => setFormData({...formData, db_id: e.target.value})}
@@ -211,15 +211,15 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Type</label>
-                  <select className="input" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as TaskType})}>
+                  <select className="input text-sm" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as TaskType})}>
                     <option value="consultation">Consultation</option>
-                    <option value="development">Development</option>
+                    <option value="development">Dev</option>
                     <option value="request">Request</option>
                   </select>
                 </div>
                 <div>
                   <label className="label">Priority</label>
-                  <select className="input" value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value as Priority})}>
+                  <select className="input text-sm" value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value as Priority})}>
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
@@ -228,15 +228,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
               </div>
               
               <div>
-                 <label className="label">Deadline</label>
-                 <input type="date" className="input" value={formData.deadline || ''} onChange={e => setFormData({...formData, deadline: e.target.value})} />
-              </div>
-
-              <div>
                 <label className="label">Description</label>
                 <textarea 
-                  className="input h-32" 
-                  placeholder="Task details..."
+                  className="input h-32 text-sm" 
+                  placeholder="Details..."
                   value={formData.description} 
                   onChange={e => setFormData({...formData, description: e.target.value})}
                 ></textarea>
@@ -244,18 +239,16 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
             </div>
 
             <div className="space-y-6">
-              {/* Performers Section */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div className="bg-slate-50 p-3 md:p-4 rounded-xl border border-slate-100">
                 <label className="label flex items-center gap-2">
                   <UserPlus size={14} className="text-blue-600"/> Performers
                 </label>
-                <div className="flex flex-wrap gap-1.5 mb-2 min-h-[1.5rem]">
+                <div className="flex flex-wrap gap-1.5 mb-2 min-h-[1rem]">
                   {formData.performer_ids?.map(id => (
                     <UserTag key={id} id={id} onRemove={() => toggleUserInList('performer_ids', id)} />
                   ))}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <select 
+                <select 
                     className="input text-sm" 
                     onChange={(e) => {
                       if (e.target.value) {
@@ -270,75 +263,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
                         {u.name}
                       </option>
                     ))}
-                  </select>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                        if(!currentUser) return;
-                        if(!formData.performer_ids?.includes(currentUser.id)) {
-                          toggleUserInList('performer_ids', currentUser.id);
-                        }
-                    }}
-                    className="btn-secondary w-full text-xs py-1.5 bg-white border border-slate-200"
-                  >
-                    <UserPlus size={14}/> Assign Me
-                  </button>
-                </div>
+                </select>
               </div>
 
-              {/* Observers Section */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <label className="label flex items-center gap-2">
-                  <Eye size={14} className="text-slate-600"/> Observers
-                </label>
-                <div className="flex flex-wrap gap-1.5 mb-2 min-h-[1.5rem]">
-                  {formData.observer_ids?.map(id => (
-                    <UserTag key={id} id={id} onRemove={() => toggleUserInList('observer_ids', id)} />
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <select 
-                    className="input text-sm" 
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        toggleUserInList('observer_ids', e.target.value);
-                        e.target.value = '';
-                      }
-                    }}
-                  >
-                    <option value="">Add observer...</option>
-                    {users.map(u => (
-                      <option key={u.id} value={u.id} disabled={formData.observer_ids?.includes(u.id)}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                        if(!currentUser) return;
-                        if(!formData.observer_ids?.includes(currentUser.id)) {
-                          toggleUserInList('observer_ids', currentUser.id);
-                        }
-                    }}
-                    className="btn-secondary w-full text-xs py-1.5 bg-white border border-slate-200"
-                  >
-                    <Eye size={14}/> Watch
-                  </button>
-                </div>
-              </div>
-
-              {/* Tags Section */}
-              <div className="bg-white p-4 rounded-xl border border-slate-100">
+              <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-100">
                 <label className="label flex items-center gap-2">
                   <TagIcon size={14} className="text-slate-600"/> Tags
                 </label>
-                <div className="flex flex-wrap gap-1.5 mb-2 min-h-[1.5rem]">
+                <div className="flex flex-wrap gap-1.5 mb-2 min-h-[1rem]">
                     {formData.tags?.map(t => (
-                        <span key={t} className="inline-flex items-center gap-1 bg-slate-50 text-slate-600 px-2 py-1 rounded text-xs border border-slate-200">
+                        <span key={t} className="inline-flex items-center gap-1 bg-slate-50 text-slate-600 px-2 py-1 rounded text-[10px] border border-slate-200">
                             {t}
-                            <button type="button" onClick={() => handleRemoveTag(t)} className="text-slate-400 hover:text-red-500 ml-1">
-                                <X size={12} />
+                            <button type="button" onClick={() => handleRemoveTag(t)} className="text-slate-400 hover:text-red-500 ml-1 p-0.5">
+                                <X size={10} />
                             </button>
                         </span>
                     ))}
@@ -346,32 +283,32 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
                 <div className="flex gap-2">
                     <input 
                         className="input text-sm flex-1" 
-                        placeholder="Type tag and press Enter..." 
+                        placeholder="Tag name..." 
                         value={tagInput} 
                         onChange={e => setTagInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleAddTag(e)}
                     />
-                    <button type="button" onClick={handleAddTag} className="btn-secondary py-1.5 px-3"><Plus size={16}/></button>
+                    <button type="button" onClick={handleAddTag} className="btn-secondary p-2"><Plus size={16}/></button>
                 </div>
               </div>
 
               <div>
                   <label className="label">Checklist</label>
-                  <div className="flex gap-2">
-                      <input className="input flex-1" value={checkInput} onChange={e => setCheckInput(e.target.value)} placeholder="Add step..."/>
-                      <button type="button" onClick={addCheck} className="btn-secondary"><Plus size={18}/></button>
+                  <div className="flex gap-2 mb-3">
+                      <input className="input flex-1 text-sm" value={checkInput} onChange={e => setCheckInput(e.target.value)} placeholder="Add step..."/>
+                      <button type="button" onClick={addCheck} className="btn-secondary p-2"><Plus size={18}/></button>
                   </div>
-                  <div className="mt-2 space-y-1">
+                  <div className="space-y-1">
                       {formData.checklist?.map(item => (
-                          <div key={item.id} className="text-xs flex items-center gap-2 p-1.5 bg-slate-50 rounded group">
-                              <input type="checkbox" checked={item.is_done} readOnly />
-                              <span className="flex-1">{item.text}</span>
+                          <div key={item.id} className="text-xs flex items-center gap-2 p-2 bg-slate-50 rounded border border-slate-100">
+                              <input type="checkbox" checked={item.is_done} readOnly className="flex-shrink-0" />
+                              <span className="flex-1 truncate">{item.text}</span>
                               <button 
                                 type="button" 
                                 onClick={() => setFormData({...formData, checklist: formData.checklist?.filter(i => i.id !== item.id)})}
-                                className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                                className="text-slate-400 hover:text-red-500 p-0.5"
                               >
-                                <X size={12}/>
+                                <X size={14}/>
                               </button>
                           </div>
                       ))}
@@ -380,10 +317,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask }) => {
             </div>
           </div>
 
-          <div className="pt-6 border-t flex justify-end gap-3">
-             <button type="button" onClick={onClose} className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg">Cancel</button>
-             <button type="submit" className="btn-primary px-8">
-                <Save size={18}/> {initialTask ? 'Save Changes' : 'Create Task'}
+          <div className="pt-6 border-t flex flex-col sm:flex-row justify-end gap-3">
+             <button type="button" onClick={onClose} className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg order-2 sm:order-1">Cancel</button>
+             <button type="submit" className="btn-primary px-8 order-1 sm:order-2">
+                <Save size={18}/> {initialTask ? 'Save' : 'Create'}
              </button>
           </div>
         </form>
