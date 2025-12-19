@@ -6,7 +6,7 @@ import {
   Phone, Mail, MapPin, Briefcase, Database as DbIcon, 
   FileText, UserPlus, Trash2, Edit2, Shield, Key, 
   History, Save, X, Plus, ClipboardList, Clock, CheckCircle, Activity, Globe, Tag as TagIcon,
-  FileCheck, Lock, Info, Timer, User
+  FileCheck, Lock, Info, Timer, User, Fingerprint
 } from 'lucide-react';
 import { Contact, Contract, Database1C, Client, Task, DbState } from '../types';
 import ConfirmModal from '../components/ConfirmModal';
@@ -136,8 +136,8 @@ const ClientDetailPage: React.FC = () => {
 
   const handleContractSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingContract) {
-      updateContract(editingContract.id, contractForm);
+    if (editingContact) {
+      updateContract(editingContact.id, contractForm);
     } else {
       addContract(contractForm as Omit<Contract, 'id'>);
     }
@@ -184,6 +184,12 @@ const ClientDetailPage: React.FC = () => {
             <div className="flex items-center flex-wrap gap-2 mb-2">
               <h1 className="text-xl md:text-2xl font-bold text-slate-800 break-words">{client.short_name}</h1>
               <button onClick={() => setShowClientModal(true)} className="text-slate-400 hover:text-blue-600 transition p-1"><Edit2 size={18} /></button>
+              {client.bin && (
+                <span className="bg-slate-50 text-slate-500 text-[10px] md:text-xs px-2 py-0.5 rounded font-mono border border-slate-200 flex items-center gap-1.5 shadow-sm">
+                   <Fingerprint size={12} className="text-slate-400" />
+                   БИН: {client.bin}
+                </span>
+              )}
               {client.is_gov && <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded font-bold">GOV</span>}
             </div>
             

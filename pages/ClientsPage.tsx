@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Building2, User, X, Star } from 'lucide-react';
+import { Search, Plus, Building2, User, X, Star, Fingerprint } from 'lucide-react';
 import { Client } from '../types';
 import StarRating from '../components/StarRating';
 
@@ -90,7 +89,12 @@ const ClientsPage: React.FC = () => {
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition flex-shrink-0">
                   <Building2 size={24} />
                 </div>
-                <div className="flex flex-col items-end gap-1 min-w-0">
+                <div className="flex flex-col items-end gap-1.5 min-w-0">
+                   {client.bin && (
+                     <span className="text-[9px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 flex items-center gap-1">
+                        <Fingerprint size={10} /> {client.bin}
+                     </span>
+                   )}
                    {client.is_gov && (
                      <span className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase whitespace-nowrap">GOV</span>
                    )}
@@ -200,6 +204,7 @@ const ClientsPage: React.FC = () => {
                             {t}
                             <button 
                                 type="button" 
+                                // Fix: Changed 'tag' to 't' to use the iteration variable from map
                                 onClick={() => handleRemoveTag(t)}
                                 className="ml-2 text-blue-400 hover:text-red-500 focus:outline-none flex items-center"
                             >
