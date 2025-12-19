@@ -98,7 +98,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ onClose, initialTask, defaultQueu
     }
   };
 
-  const UserTag = ({ id, onRemove }: { id: string, onRemove: () => void }) => {
+  // Fix: explicitly typing UserTag as a React Functional Component to handle 'key' prop correctly in JSX
+  const UserTag: React.FC<{ id: string, onRemove: () => void }> = ({ id, onRemove }) => {
     const u = users.find(user => user.id === id);
     if (!u) return null;
     return (
