@@ -104,7 +104,7 @@ const ClientDetailPage: React.FC = () => {
   useEffect(() => {
     if (showDbModal) {
       if (editingDb) setDbForm(editingDb);
-      else setDbForm({ client_id: id, state: 'full_support', work_mode: 'file', its_supported: true });
+      else setDbForm({ client_id: id, state: 'full_support', work_mode: 'file', its_supported: true, db_admin: '', db_password: '' });
     }
   }, [editingDb, showDbModal, id]);
 
@@ -367,19 +367,44 @@ const ClientDetailPage: React.FC = () => {
                   const stateInfo = DB_STATE_LABELS[db.state || 'full_support'];
                   return (
                     <div key={db.id} className="border border-slate-200 p-4 rounded-xl flex flex-col relative group hover:border-purple-200 transition bg-slate-50/30">
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-2">
-                          <button onClick={() => { setEditingDb(db); setShowDbModal(true); }} className="text-slate-400 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
-                          <button onClick={() => openConfirm('Удалить базу', 'Вы уверены?', () => deleteDatabase(db.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1 z-10">
+                          <button onClick={() => { setEditingDb(db); setShowDbModal(true); }} className="text-slate-400 hover:text-blue-600 hover:bg-white rounded p-1 shadow-sm transition"><Edit2 size={14}/></button>
+                          <button onClick={() => openConfirm('Удалить базу', 'Вы уверены?', () => deleteDatabase(db.id))} className="text-slate-400 hover:text-red-600 hover:bg-white rounded p-1 shadow-sm transition"><Trash2 size={14}/></button>
                       </div>
-                      <div className="flex items-center gap-2 mb-2 min-w-0">
+                      <div className="flex items-center gap-2 mb-3 min-w-0 pr-12">
                           <DbIcon size={14} className="text-purple-500 flex-shrink-0" />
-                          <span className="font-bold text-slate-800 text-sm truncate">{db.name}</span>
-                          <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-bold uppercase text-slate-500 flex-shrink-0">{db.work_mode === 'file' ? 'Файл' : 'Сервер'}</span>
+                          <span className="font-bold text-slate-800 text-sm truncate" title={db.name}>{db.name}</span>
                       </div>
-                      <div className="text-[11px] text-slate-500 space-y-1 mb-3 flex-1">
+                      <div className="text-[11px] text-slate-500 space-y-1.5 mb-3 flex-1">
+                          <div className="flex justify-between items-center">
+                            <span>Режим:</span>
+                            <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-bold uppercase text-slate-500">{db.work_mode === 'file' ? 'Файловый' : 'Сервер'}</span>
+                          </div>
                           <p className="truncate">Конфиг: <span className="text-blue-600 font-medium">{configs.find(c => c.id === db.config_id)?.name}</span></p>
                           <p>Рег. номер: <span className="text-slate-700">{db.reg_number}</span></p>
-                          <div className="flex items-center gap-1.5 pt-1">
+                          
+                          <div className="flex justify-between items-center pt-1 border-t border-slate-100 mt-2">
+                             <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">На поддержке ИТС:</span>
+                             {db.its_supported ? (
+                                <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><CheckCircle size={10}/> Да</span>
+                             ) : (
+                                <span className="text-[10px] text-slate-400 font-bold">Нет</span>
+                             )}
+                          </div>
+
+                          <div className="flex flex-col gap-1 mt-2 p-2 bg-white rounded border border-slate-100 shadow-sm">
+                             <div className="flex items-center gap-1.5 text-[10px] text-slate-600">
+                                <User size={10} className="text-slate-400" />
+                                <span className="font-medium">Логин:</span>
+                                <span className="truncate">{db.db_admin || '—'}</span>
+                             </div>
+                             <div className="flex items-center gap-1.5 text-[10px] text-slate-600">
+                                <Lock size={10} className="text-slate-400" />
+                                <span className="font-medium">Пароль:</span>
+                                <span className="truncate">{db.db_password || '—'}</span>
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-2">
                              <Activity size={10} className="text-slate-400 flex-shrink-0"/>
                              <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-tighter ${stateInfo.color} truncate`}>
                                {stateInfo.label}
@@ -500,7 +525,7 @@ const ClientDetailPage: React.FC = () => {
               {client.tags && client.tags.length > 0 && (
                 <div className="pt-6 border-t border-slate-100">
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><TagIcon size={18} className="text-slate-500"/> Теги</h3>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex wrap gap-2">
                     {client.tags.map(tag => (
                       <span key={tag} className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">
                         {tag}
@@ -514,7 +539,7 @@ const ClientDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* MODALS - Russian content for modals is handled in the same way, updated labels and placeholders */}
+      {/* MODALS */}
       {showClientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-auto">
@@ -657,6 +682,21 @@ const ClientDetailPage: React.FC = () => {
                   </select>
                 </div>
               </div>
+              
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Доступы (Admin)</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Логин</label>
+                    <input className="input bg-white" placeholder="admin" value={dbForm.db_admin || ''} onChange={e => setDbForm({...dbForm, db_admin: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label">Пароль</label>
+                    <input className="input bg-white" placeholder="•••••" value={dbForm.db_password || ''} onChange={e => setDbForm({...dbForm, db_password: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Режим работы</label>
