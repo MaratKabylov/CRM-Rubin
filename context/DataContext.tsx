@@ -99,23 +99,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             entityId = oldItem.id;
             finalParentId = typeof parentId === 'function' ? parentId(oldItem) : parentId;
             
-            // Generate detailed change info for tasks
-            if (entityType === 'task') {
-                const changes: string[] = [];
-                Object.keys(newItemData).forEach(key => {
-                    const k = key as keyof Item;
-                    if (oldItem[k] !== newItemData[k]) {
-                        changes.push(String(key));
-                    }
-                });
-                details = changes.length > 0 ? `Changed: ${changes.join(', ')}` : 'Updated task';
-            } else {
-                details = `Updated ${entityType}`;
-            }
+            const changes: string[] = [];
+            Object.keys(newItemData).forEach(key => {
+                const k = key as keyof Item;
+                if (oldItem[k] !== newItemData[k]) {
+                    changes.push(String(key));
+                }
+            });
+            details = changes.length > 0 ? `Changed: ${changes.join(', ')}` : `Updated ${entityType}`;
         } else if (action === 'log_time') {
           entityId = (oldItem as Item).id;
           finalParentId = typeof parentId === 'function' ? parentId(oldItem as Item) : parentId;
-          details = `Logged time on task`;
+          details = `Logged time effort`;
         }
 
         db.history.create({
@@ -133,7 +128,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getClientStats = (clientId: string) => {
-    const clientTasks = db.tasks.getAll().filter(t => t.client_id === clientId && t.status === 'done' && t.completion_rating);
+    const clientTasks = db.tasks.getAll().filter(t => t.client_id === clientId && t.status.toLowerCase().includes('закрыт') && t.completion_rating);
     if (clientTasks.length === 0) return { avgRating: 0, taskCount: 0 };
     const sum = clientTasks.reduce((acc, t) => acc + (t.completion_rating || 0), 0);
     return { 
@@ -195,8 +190,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addTask: (data) => {
         const currentTasks = db.tasks.getAll();
         const maxNo = currentTasks.reduce((max, task) => Math.max(max, task.task_no || 0), 0);
-        
-        // Calculate number within queue
         const queueTasks = currentTasks.filter(t => t.queue_id === data.queue_id);
         const maxQueueNo = queueTasks.reduce((max, task) => Math.max(max, task.queue_task_no || 0), 0);
 

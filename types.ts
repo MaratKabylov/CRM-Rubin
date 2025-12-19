@@ -118,9 +118,9 @@ export interface Contract {
   end_date: string;
   comment?: string;
   is_signed: boolean;
-  its_active: boolean;
-  its_ours: boolean;
-  its_expiration_date?: string;
+  its_active: boolean; // Manual toggle for support service generally
+  its_ours: boolean; // Flag if ITS is via our company
+  its_expiration_date?: string; // Critical for auto-status calculation
   its_login?: string;
   its_password?: string;
   minutes_included: number;
