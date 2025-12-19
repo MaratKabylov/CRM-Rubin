@@ -65,8 +65,8 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
       `}>
         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-blue-400 tracking-wider">1C CRM</h1>
-            <p className="text-xs text-slate-500 mt-1">Service Management</p>
+            <h1 className="text-xl font-bold text-blue-400 tracking-wider">1С CRM</h1>
+            <p className="text-xs text-slate-500 mt-1">Управление сервисом</p>
           </div>
           <button className="lg:hidden text-slate-400" onClick={() => setIsSidebarOpen(false)}>
             <X size={24} />
@@ -74,13 +74,13 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-          <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" onClick={() => setIsSidebarOpen(false)} />
-          <SidebarItem to="/queues" icon={Layers} label="Queues" onClick={() => setIsSidebarOpen(false)} />
-          <SidebarItem to="/tasks" icon={ClipboardList} label="Tasks & Issues" onClick={() => setIsSidebarOpen(false)} />
-          <SidebarItem to="/clients" icon={Users} label="Clients" onClick={() => setIsSidebarOpen(false)} />
-          <SidebarItem to="/directories" icon={BookOpen} label="Directories" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/dashboard" icon={LayoutDashboard} label="Рабочий стол" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/queues" icon={Layers} label="Очереди" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/tasks" icon={ClipboardList} label="Задачи и тикеты" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/clients" icon={Users} label="Клиенты" onClick={() => setIsSidebarOpen(false)} />
+          <SidebarItem to="/directories" icon={BookOpen} label="Справочники" onClick={() => setIsSidebarOpen(false)} />
           {user.role === 'admin' && (
-            <SidebarItem to="/users" icon={Settings} label="Users & Access" onClick={() => setIsSidebarOpen(false)} />
+            <SidebarItem to="/users" icon={Settings} label="Доступ и пользователи" onClick={() => setIsSidebarOpen(false)} />
           )}
         </nav>
 
@@ -88,7 +88,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
           <div className="flex items-center justify-between mb-4 px-2">
             <div>
               <p className="text-sm font-semibold text-white truncate max-w-[140px]">{user.name}</p>
-              <p className="text-xs text-slate-400 capitalize">{user.role}</p>
+              <p className="text-xs text-slate-400 capitalize">{user.role === 'admin' ? 'Администратор' : 'Менеджер'}</p>
             </div>
           </div>
           <button 
@@ -96,7 +96,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
             className="flex items-center justify-center w-full space-x-2 bg-slate-800 hover:bg-red-900/50 hover:text-red-200 text-slate-300 py-2 rounded-md transition-all text-sm"
           >
             <LogOut size={16} />
-            <span>Sign Out</span>
+            <span>Выйти</span>
           </button>
         </div>
       </aside>
@@ -109,7 +109,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
              <button onClick={toggleSidebar} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">
                 <Menu size={24} />
              </button>
-             <h2 className="font-bold text-slate-800">1C CRM</h2>
+             <h2 className="font-bold text-slate-800">1С CRM</h2>
           </div>
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
             {user.name.charAt(0)}

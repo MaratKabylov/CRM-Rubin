@@ -16,6 +16,15 @@ import TaskDetailModal from '../components/TaskDetailModal';
 
 type Tab = 'contacts' | 'contracts' | 'databases' | 'tasks' | 'history' | 'info';
 
+const TAB_LABELS: Record<Tab, string> = {
+  contacts: 'Контакты',
+  contracts: 'Договоры',
+  databases: 'Базы 1С',
+  tasks: 'Задачи',
+  history: 'История',
+  info: 'Инфо'
+};
+
 const DB_STATE_LABELS: Record<DbState, { label: string, color: string }> = {
   full_support: { label: 'Типовое (Full Support)', color: 'bg-green-100 text-green-700' },
   full_support_with_extensions: { label: 'Типовое + расширения', color: 'bg-emerald-100 text-emerald-700' },
@@ -99,7 +108,7 @@ const ClientDetailPage: React.FC = () => {
     }
   }, [editingDb, showDbModal, id]);
 
-  if (!client) return <div className="p-8 text-center text-slate-500">Client not found</div>;
+  if (!client) return <div className="p-8 text-center text-slate-500">Клиент не найден</div>;
 
   const clientContacts = contacts.filter(c => c.client_id === client.id);
   const clientContracts = contracts.filter(c => c.client_id === client.id);
@@ -136,8 +145,8 @@ const ClientDetailPage: React.FC = () => {
 
   const handleContractSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingContact) {
-      updateContract(editingContact.id, contractForm);
+    if (editingContract) {
+      updateContract(editingContract.id, contractForm);
     } else {
       addContract(contractForm as Omit<Contract, 'id'>);
     }
@@ -190,13 +199,13 @@ const ClientDetailPage: React.FC = () => {
                    БИН: {client.bin}
                 </span>
               )}
-              {client.is_gov && <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded font-bold">GOV</span>}
+              {client.is_gov && <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded font-bold">ГОС</span>}
             </div>
             
             <div className="flex items-center space-x-2 mb-4">
                  <StarRating rating={stats.avgRating} size={16} />
                  <span className="text-sm font-bold text-slate-700">{stats.avgRating}</span>
-                 <span className="text-[10px] text-slate-400">({stats.taskCount} rated tasks)</span>
+                 <span className="text-[10px] text-slate-400">({stats.taskCount} оцененных задач)</span>
             </div>
 
             <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:flex-wrap md:gap-4 text-xs md:text-sm text-slate-600">
@@ -206,7 +215,7 @@ const ClientDetailPage: React.FC = () => {
             </div>
           </div>
           <div className="w-full md:w-auto md:text-right border-t md:border-t-0 pt-4 md:pt-0">
-             <p className="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wider">Account Manager</p>
+             <p className="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wider">Куратор</p>
              <p className="font-semibold text-slate-800 text-sm">{owner?.name}</p>
           </div>
         </div>
@@ -218,11 +227,11 @@ const ClientDetailPage: React.FC = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 md:px-4 md:py-2 rounded-md text-[11px] md:text-sm font-medium capitalize transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 md:px-4 md:py-2 rounded-md text-[11px] md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {tab}
+              {TAB_LABELS[tab] || tab}
             </button>
           ))}
         </div>
@@ -231,8 +240,8 @@ const ClientDetailPage: React.FC = () => {
           {activeTab === 'contacts' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                <h3 className="font-bold text-lg">Contacts</h3>
-                <button onClick={() => { setEditingContact(null); setShowContactModal(true); }} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16} /> Add Contact</button>
+                <h3 className="font-bold text-lg">Контактные лица</h3>
+                <button onClick={() => { setEditingContact(null); setShowContactModal(true); }} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16} /> Добавить контакт</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {clientContacts.map(c => {
@@ -241,7 +250,7 @@ const ClientDetailPage: React.FC = () => {
                     <div key={c.id} className="border border-slate-200 p-4 rounded-xl flex justify-between items-start group relative bg-slate-50/30">
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-2">
                           <button onClick={() => { setEditingContact(c); setShowContactModal(true); }} className="text-slate-400 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
-                          <button onClick={() => openConfirm('Delete Contact', 'Are you sure?', () => deleteContact(c.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                          <button onClick={() => openConfirm('Удалить контакт', 'Вы уверены?', () => deleteContact(c.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={14}/></button>
                       </div>
                       <div className="flex-1 min-w-0 pr-8">
                         <div className="font-bold text-sm truncate">{c.first_name} {c.last_name}</div>
@@ -262,24 +271,24 @@ const ClientDetailPage: React.FC = () => {
           {activeTab === 'contracts' && (
              <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                <h3 className="font-bold text-lg">Contracts</h3>
-                <button onClick={() => { setEditingContract(null); setShowContractModal(true); }} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16} /> Add Contract</button>
+                <h3 className="font-bold text-lg">Договоры</h3>
+                <button onClick={() => { setEditingContract(null); setShowContractModal(true); }} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16} /> Новый договор</button>
               </div>
               <div className="overflow-x-auto border border-slate-100 rounded-lg shadow-sm">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
                     <tr>
-                      <th className="p-3">Наша Организация</th>
-                      <th className="p-3">№ Дог.</th>
-                      <th className="p-3">Наименование</th>
-                      <th className="p-3">Действие</th>
+                      <th className="p-3">Организация</th>
+                      <th className="p-3">№</th>
+                      <th className="p-3">Заголовок</th>
+                      <th className="p-3">Период</th>
                       <th className="p-3 text-center">Подписан</th>
                       <th className="p-3 text-center">Статус</th>
-                      <th className="p-3 text-center">ИТС Подписка</th>
+                      <th className="p-3 text-center">ИТС</th>
                       <th className="p-3 text-center">ИТС Статус</th>
-                      <th className="p-3 text-center">Часы (мин)</th>
+                      <th className="p-3 text-center">Минуты</th>
                       <th className="p-3">Доступы ИТС</th>
-                      <th className="p-3">Комментарий</th>
+                      <th className="p-3">Коммент</th>
                       <th className="p-3 text-right">Действия</th>
                     </tr>
                   </thead>
@@ -313,7 +322,7 @@ const ClientDetailPage: React.FC = () => {
                           </td>
                           <td className="p-3 text-center">
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap ${c.its_ours ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                              {c.its_ours ? 'Наша' : 'Сторонняя'}
+                              {c.its_ours ? 'Наш' : 'Чужой'}
                             </span>
                           </td>
                           <td className="p-3 text-center">
@@ -350,8 +359,8 @@ const ClientDetailPage: React.FC = () => {
           {activeTab === 'databases' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                <h3 className="font-bold text-lg">1C Databases</h3>
-                <button onClick={() => { setEditingDb(null); setShowDbModal(true); }} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16} /> Add Database</button>
+                <h3 className="font-bold text-lg">Базы 1С</h3>
+                <button onClick={() => { setEditingDb(null); setShowDbModal(true); }} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16} /> Добавить базу</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {clientDbs.map(db => {
@@ -360,16 +369,16 @@ const ClientDetailPage: React.FC = () => {
                     <div key={db.id} className="border border-slate-200 p-4 rounded-xl flex flex-col relative group hover:border-purple-200 transition bg-slate-50/30">
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-2">
                           <button onClick={() => { setEditingDb(db); setShowDbModal(true); }} className="text-slate-400 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
-                          <button onClick={() => openConfirm('Delete DB', 'Are you sure?', () => deleteDatabase(db.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                          <button onClick={() => openConfirm('Удалить базу', 'Вы уверены?', () => deleteDatabase(db.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={14}/></button>
                       </div>
                       <div className="flex items-center gap-2 mb-2 min-w-0">
                           <DbIcon size={14} className="text-purple-500 flex-shrink-0" />
                           <span className="font-bold text-slate-800 text-sm truncate">{db.name}</span>
-                          <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-bold uppercase text-slate-500 flex-shrink-0">{db.work_mode}</span>
+                          <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-bold uppercase text-slate-500 flex-shrink-0">{db.work_mode === 'file' ? 'Файл' : 'Сервер'}</span>
                       </div>
                       <div className="text-[11px] text-slate-500 space-y-1 mb-3 flex-1">
-                          <p className="truncate">Config: <span className="text-blue-600 font-medium">{configs.find(c => c.id === db.config_id)?.name}</span></p>
-                          <p>Reg Num: <span className="text-slate-700">{db.reg_number}</span></p>
+                          <p className="truncate">Конфиг: <span className="text-blue-600 font-medium">{configs.find(c => c.id === db.config_id)?.name}</span></p>
+                          <p>Рег. номер: <span className="text-slate-700">{db.reg_number}</span></p>
                           <div className="flex items-center gap-1.5 pt-1">
                              <Activity size={10} className="text-slate-400 flex-shrink-0"/>
                              <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-tighter ${stateInfo.color} truncate`}>
@@ -387,8 +396,8 @@ const ClientDetailPage: React.FC = () => {
           {activeTab === 'tasks' && (
               <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                      <h3 className="font-bold text-lg text-slate-800">Task History</h3>
-                      <button onClick={() => setShowTaskModal(true)} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16}/> New Task</button>
+                      <h3 className="font-bold text-lg text-slate-800">История задач</h3>
+                      <button onClick={() => setShowTaskModal(true)} className="btn-primary text-xs md:text-sm w-full sm:w-auto"><Plus size={16}/> Новая задача</button>
                   </div>
                   <div className="space-y-2">
                       {clientTasks.map(task => (
@@ -398,7 +407,7 @@ const ClientDetailPage: React.FC = () => {
                             className="flex items-center justify-between p-3 md:p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-300 cursor-pointer transition"
                           >
                               <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                                  <div className={`p-2 rounded-lg flex-shrink-0 ${task.status.toLowerCase().includes('закрыт') ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                                  <div className={`p-2 rounded-lg flex-shrink-0 ${task.status.toLowerCase().includes('закрыт') || task.status.toLowerCase().includes('выполн') ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
                                       {task.status.toLowerCase().includes('закрыт') ? <CheckCircle size={18}/> : <Clock size={18}/>}
                                   </div>
                                   <div className="min-w-0">
@@ -411,14 +420,14 @@ const ClientDetailPage: React.FC = () => {
                               </div>
                           </div>
                       ))}
-                      {clientTasks.length === 0 && <div className="text-center py-10 text-slate-400 text-sm">No tasks recorded for this client.</div>}
+                      {clientTasks.length === 0 && <div className="text-center py-10 text-slate-400 text-sm">Нет задач по этому клиенту.</div>}
                   </div>
               </div>
           )}
 
           {activeTab === 'history' && (
             <div className="space-y-4">
-              <h3 className="font-bold text-lg">Change Log</h3>
+              <h3 className="font-bold text-lg">Журнал изменений</h3>
               <div className="space-y-4 relative before:absolute before:inset-y-0 before:left-4 before:w-0.5 before:bg-slate-100 pl-8">
                 {clientLogs.map((log) => (
                   <div key={log.id} className="relative">
@@ -437,7 +446,7 @@ const ClientDetailPage: React.FC = () => {
                     </div>
                   </div>
                 ))}
-                {clientLogs.length === 0 && <p className="text-slate-400 italic py-10 text-center">No history logs yet.</p>}
+                {clientLogs.length === 0 && <p className="text-slate-400 italic py-10 text-center">История пуста.</p>}
               </div>
             </div>
           )}
@@ -445,44 +454,44 @@ const ClientDetailPage: React.FC = () => {
           {activeTab === 'info' && (
             <div className="space-y-8">
               <div>
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Globe size={18} className="text-blue-500"/> General Information</h3>
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Globe size={18} className="text-blue-500"/> Общая информация</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase">Short Name</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase">Краткое название</label>
                       <p className="text-sm font-medium text-slate-800">{client.short_name}</p>
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase">Full Name</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase">Полное название</label>
                       <p className="text-sm font-medium text-slate-800">{client.full_name}</p>
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase">BIN</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase">БИН / ИИН</label>
                       <p className="text-sm font-mono text-slate-800">{client.bin || '—'}</p>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase">Sphere</label>
-                      <p className="text-sm font-medium text-slate-800">{sphere?.name || 'Other'}</p>
+                      <label className="text-xs font-bold text-slate-400 uppercase">Сфера деятельности</label>
+                      <p className="text-sm font-medium text-slate-800">{sphere?.name || 'Другое'}</p>
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase">Source</label>
-                      <p className="text-sm font-medium text-slate-800">{source?.name || 'Direct'}</p>
+                      <label className="text-xs font-bold text-slate-400 uppercase">Источник</label>
+                      <p className="text-sm font-medium text-slate-800">{source?.name || 'Прямой'}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="pt-6 border-t border-slate-100">
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><MapPin size={18} className="text-red-500"/> Addresses</h3>
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><MapPin size={18} className="text-red-500"/> Адреса</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase">Legal Address</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase">Юридический адрес</label>
                     <p className="text-sm text-slate-700">{client.legal_address || '—'}</p>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase">Actual Address</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase">Фактический адрес</label>
                     <p className="text-sm text-slate-700">{client.actual_address || '—'}</p>
                   </div>
                 </div>
@@ -490,7 +499,7 @@ const ClientDetailPage: React.FC = () => {
 
               {client.tags && client.tags.length > 0 && (
                 <div className="pt-6 border-t border-slate-100">
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><TagIcon size={18} className="text-slate-500"/> Tags</h3>
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><TagIcon size={18} className="text-slate-500"/> Теги</h3>
                   <div className="flex flex-wrap gap-2">
                     {client.tags.map(tag => (
                       <span key={tag} className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">
@@ -505,62 +514,46 @@ const ClientDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* MODALS */}
+      {/* MODALS - Russian content for modals is handled in the same way, updated labels and placeholders */}
       {showClientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-auto">
             <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center">
-              <h2 className="text-lg md:text-xl font-bold text-slate-800">Edit Client</h2>
+              <h2 className="text-lg md:text-xl font-bold text-slate-800">Редактировать клиента</h2>
               <button onClick={() => setShowClientModal(false)} className="text-slate-400 hover:text-slate-600 p-2">✕</button>
             </div>
             <form onSubmit={handleClientSubmit} className="p-4 md:p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="label">Short Name</label><input required className="input" value={clientForm.short_name || ''} onChange={e => setClientForm({...clientForm, short_name: e.target.value})} /></div>
-                <div><label className="label">BIN</label><input className="input" value={clientForm.bin || ''} onChange={e => setClientForm({...clientForm, bin: e.target.value})} /></div>
+                <div><label className="label">Краткое название</label><input required className="input" value={clientForm.short_name || ''} onChange={e => setClientForm({...clientForm, short_name: e.target.value})} /></div>
+                <div><label className="label">БИН / ИИН</label><input className="input" value={clientForm.bin || ''} onChange={e => setClientForm({...clientForm, bin: e.target.value})} /></div>
               </div>
-              <div><label className="label">Full Name</label><input required className="input" value={clientForm.full_name || ''} onChange={e => setClientForm({...clientForm, full_name: e.target.value})} /></div>
+              <div><label className="label">Полное название</label><input required className="input" value={clientForm.full_name || ''} onChange={e => setClientForm({...clientForm, full_name: e.target.value})} /></div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                   <label className="label">Sphere</label>
+                   <label className="label">Сфера деятельности</label>
                    <select className="input" value={clientForm.activity_id} onChange={e => setClientForm({...clientForm, activity_id: e.target.value})}>
-                     <option value="">Select...</option>
+                     <option value="">Выберите...</option>
                      {spheres.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                    </select>
                 </div>
                 <div>
-                   <label className="label">Source</label>
+                   <label className="label">Источник</label>
                    <select className="input" value={clientForm.source_id} onChange={e => setClientForm({...clientForm, source_id: e.target.value})}>
-                     <option value="">Select...</option>
+                     <option value="">Выберите...</option>
                      {sources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                    </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="label">Legal Address</label><input className="input" value={clientForm.legal_address || ''} onChange={e => setClientForm({...clientForm, legal_address: e.target.value})} /></div>
-                <div><label className="label">Actual Address</label><input className="input" value={clientForm.actual_address || ''} onChange={e => setClientForm({...clientForm, actual_address: e.target.value})} /></div>
-              </div>
-
-              <div className="border-t border-slate-100 pt-4 mt-2">
-                <label className="label">Tags</label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                    {clientForm.tags?.map(t => (
-                        <span key={t} className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs flex items-center border border-blue-100">
-                            {t}
-                            <button type="button" onClick={() => handleRemoveTag(t)} className="ml-2 text-blue-400 hover:text-red-500 p-0.5"><X size={12} /></button>
-                        </span>
-                    ))}
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <input className="input flex-1 text-sm" placeholder="Add tag..." value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddTag(e)}/>
-                    <button type="button" onClick={handleAddTag} className="btn-secondary w-full sm:w-auto"><Plus size={18}/></button>
-                </div>
+                <div><label className="label">Юридический адрес</label><input className="input" value={clientForm.legal_address || ''} onChange={e => setClientForm({...clientForm, legal_address: e.target.value})} /></div>
+                <div><label className="label">Фактический адрес</label><input className="input" value={clientForm.actual_address || ''} onChange={e => setClientForm({...clientForm, actual_address: e.target.value})} /></div>
               </div>
 
               <div className="pt-4 flex flex-col sm:flex-row justify-end gap-3">
-                <button type="button" onClick={() => setShowClientModal(false)} className="btn-secondary w-full sm:w-auto order-2 sm:order-1">Cancel</button>
-                <button type="submit" className="btn-primary w-full sm:w-auto order-1 sm:order-2"><Save size={18} /> Save</button>
+                <button type="button" onClick={() => setShowClientModal(false)} className="btn-secondary w-full sm:w-auto order-2 sm:order-1">Отмена</button>
+                <button type="submit" className="btn-primary w-full sm:w-auto order-1 sm:order-2"><Save size={18} /> Сохранить</button>
               </div>
             </form>
           </div>
@@ -571,22 +564,22 @@ const ClientDetailPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
             <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold">{editingContact ? 'Edit Contact' : 'New Contact'}</h2>
+              <h2 className="text-xl font-bold">{editingContact ? 'Редактировать контакт' : 'Новый контакт'}</h2>
               <button onClick={() => setShowContactModal(false)}>✕</button>
             </div>
             <form onSubmit={handleContactSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label">First Name</label><input required className="input" value={contactForm.first_name || ''} onChange={e => setContactForm({...contactForm, first_name: e.target.value})} /></div>
-                <div><label className="label">Last Name</label><input required className="input" value={contactForm.last_name || ''} onChange={e => setContactForm({...contactForm, last_name: e.target.value})} /></div>
+                <div><label className="label">Имя</label><input required className="input" value={contactForm.first_name || ''} onChange={e => setContactForm({...contactForm, first_name: e.target.value})} /></div>
+                <div><label className="label">Фамилия</label><input required className="input" value={contactForm.last_name || ''} onChange={e => setContactForm({...contactForm, last_name: e.target.value})} /></div>
               </div>
-              <div><label className="label">Position</label><input className="input" value={contactForm.position || ''} onChange={e => setContactForm({...contactForm, position: e.target.value})} /></div>
+              <div><label className="label">Должность</label><input className="input" value={contactForm.position || ''} onChange={e => setContactForm({...contactForm, position: e.target.value})} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label">Phone</label><input className="input" value={contactForm.phone || ''} onChange={e => setContactForm({...contactForm, phone: e.target.value})} /></div>
+                <div><label className="label">Телефон</label><input className="input" value={contactForm.phone || ''} onChange={e => setContactForm({...contactForm, phone: e.target.value})} /></div>
                 <div><label className="label">Email</label><input type="email" className="input" value={contactForm.email || ''} onChange={e => setContactForm({...contactForm, email: e.target.value})} /></div>
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setShowContactModal(false)} className="btn-secondary">Cancel</button>
-                <button type="submit" className="btn-primary">Save Contact</button>
+                <button type="button" onClick={() => setShowContactModal(false)} className="btn-secondary">Отмена</button>
+                <button type="submit" className="btn-primary">Сохранить</button>
               </div>
             </form>
           </div>
@@ -614,13 +607,13 @@ const ClientDetailPage: React.FC = () => {
               <div><label className="label">Наименование договора</label><input required className="input" value={contractForm.title || ''} onChange={e => setContractForm({...contractForm, title: e.target.value})} /></div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="label">Дата начала (с)</label><input type="date" required className="input" value={contractForm.start_date || ''} onChange={e => setContractForm({...contractForm, start_date: e.target.value})} /></div>
-                <div><label className="label">Дата окончания (по)</label><input type="date" required className="input" value={contractForm.end_date || ''} onChange={e => setContractForm({...contractForm, end_date: e.target.value})} /></div>
+                <div><label className="label">Дата начала</label><input type="date" required className="input" value={contractForm.start_date || ''} onChange={e => setContractForm({...contractForm, start_date: e.target.value})} /></div>
+                <div><label className="label">Дата окончания</label><input type="date" required className="input" value={contractForm.end_date || ''} onChange={e => setContractForm({...contractForm, end_date: e.target.value})} /></div>
               </div>
               
               <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label className="label">Часы по договору (в мин)</label><input type="number" className="input" value={contractForm.minutes_included || 0} onChange={e => setContractForm({...contractForm, minutes_included: parseInt(e.target.value) || 0})} /></div>
+                    <div><label className="label">Минут в месяц</label><input type="number" className="input" value={contractForm.minutes_included || 0} onChange={e => setContractForm({...contractForm, minutes_included: parseInt(e.target.value) || 0})} /></div>
                     <div><label className="label">Дата окончания ИТС</label><input type="date" className="input" value={contractForm.its_expiration_date || ''} onChange={e => setContractForm({...contractForm, its_expiration_date: e.target.value})} /></div>
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -633,12 +626,12 @@ const ClientDetailPage: React.FC = () => {
 
               <div className="flex flex-wrap items-center gap-6 py-2 border-t pt-4">
                 <label className="flex items-center gap-2 text-sm font-medium cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={contractForm.is_signed} onChange={e => setContractForm({...contractForm, is_signed: e.target.checked})}/> Договор подписан</label>
-                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={contractForm.its_ours} onChange={e => setContractForm({...contractForm, its_ours: e.target.checked})}/> ИТС Подписка Наша</label>
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={contractForm.its_ours} onChange={e => setContractForm({...contractForm, its_ours: e.target.checked})}/> Наша подписка ИТС</label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <button type="button" onClick={() => setShowContractModal(false)} className="btn-secondary">Отмена</button>
-                <button type="submit" className="btn-primary">Сохранить договор</button>
+                <button type="submit" className="btn-primary">Сохранить</button>
               </div>
             </form>
           </div>
@@ -649,42 +642,42 @@ const ClientDetailPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
             <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold">{editingDb ? 'Edit Database' : 'New Database'}</h2>
+              <h2 className="text-xl font-bold">{editingDb ? 'Редактировать базу' : 'Новая база'}</h2>
               <button onClick={() => setShowDbModal(false)}>✕</button>
             </div>
             <form onSubmit={handleDbSubmit} className="p-6 space-y-4">
-              <div><label className="label">Database Name</label><input required className="input" value={dbForm.name || ''} onChange={e => setDbForm({...dbForm, name: e.target.value})} /></div>
+              <div><label className="label">Название базы</label><input required className="input" value={dbForm.name || ''} onChange={e => setDbForm({...dbForm, name: e.target.value})} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label">Reg Number</label><input className="input" value={dbForm.reg_number || ''} onChange={e => setDbForm({...dbForm, reg_number: e.target.value})} /></div>
+                <div><label className="label">Рег. номер</label><input className="input" value={dbForm.reg_number || ''} onChange={e => setDbForm({...dbForm, reg_number: e.target.value})} /></div>
                 <div>
-                  <label className="label">Configuration</label>
+                  <label className="label">Конфигурация</label>
                   <select required className="input" value={dbForm.config_id} onChange={e => setDbForm({...dbForm, config_id: e.target.value})}>
-                    <option value="">Select...</option>
+                    <option value="">Выберите...</option>
                     {configs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Work Mode</label>
+                  <label className="label">Режим работы</label>
                   <select className="input" value={dbForm.work_mode} onChange={e => setDbForm({...dbForm, work_mode: e.target.value as any})}>
-                    <option value="file">File</option>
-                    <option value="server">Server</option>
+                    <option value="file">Файловый</option>
+                    <option value="server">Клиент-сервер</option>
                   </select>
                 </div>
                 <div>
-                  <label className="label">Support State</label>
+                  <label className="label">Состояние</label>
                   <select className="input" value={dbForm.state} onChange={e => setDbForm({...dbForm, state: e.target.value as any})}>
                     {Object.entries(DB_STATE_LABELS).map(([val, {label}]) => <option key={val} value={val}>{label}</option>)}
                   </select>
                 </div>
               </div>
               <div className="flex items-center gap-4 py-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={dbForm.its_supported} onChange={e => setDbForm({...dbForm, its_supported: e.target.checked})}/> ITS active</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={dbForm.its_supported} onChange={e => setDbForm({...dbForm, its_supported: e.target.checked})}/> На ИТС поддержке</label>
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setShowDbModal(false)} className="btn-secondary">Cancel</button>
-                <button type="submit" className="btn-primary">Save Database</button>
+                <button type="button" onClick={() => setShowDbModal(false)} className="btn-secondary">Отмена</button>
+                <button type="submit" className="btn-primary">Сохранить</button>
               </div>
             </form>
           </div>

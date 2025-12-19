@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
@@ -28,13 +29,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm,
               onClick={onClose}
               className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
             >
-              Cancel
+              Отмена
             </button>
             <button 
               onClick={() => { onConfirm(); onClose(); }}
               className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium shadow-md shadow-red-500/30 flex items-center transition-colors"
             >
-              Delete
+              Удалить
             </button>
           </div>
         </div>

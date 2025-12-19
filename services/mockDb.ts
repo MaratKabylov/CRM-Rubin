@@ -6,25 +6,25 @@ import {
 } from '../types';
 
 const seedUsers: User[] = [
-  { id: 'u1', name: 'Administrator', email: 'admin@crm.local', password: 'admin', role: 'admin' },
-  { id: 'u2', name: 'Manager', email: 'manager@crm.local', password: 'user', role: 'user' },
+  { id: 'u1', name: 'Администратор', email: 'admin@crm.local', password: 'admin', role: 'admin' },
+  { id: 'u2', name: 'Менеджер', email: 'manager@crm.local', password: 'user', role: 'user' },
 ];
 
 const seedQueueTemplates: QueueTemplateDefinition[] = [
   { 
     id: 'qt1', 
     name: 'Базовый шаблон', 
-    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыта'] 
   },
   { 
     id: 'qt2', 
     name: 'Линия поддержки', 
-    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыта'] 
   },
   { 
     id: 'qt3', 
     name: 'Управление проектами', 
-    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыта'] 
   },
   { 
     id: 'qt4', 
@@ -39,7 +39,7 @@ const seedQueues: TaskQueue[] = [
     name: 'Линия поддержки', 
     prefix: 'SUP', 
     template: 'qt2', 
-    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыт'] 
+    statuses: ['Зарегистрирована', 'В работе', 'Требуется информация', 'Закрыта'] 
   },
   { 
     id: 'q2', 
@@ -51,26 +51,26 @@ const seedQueues: TaskQueue[] = [
 ];
 
 const seedActivitySpheres: ActivitySphere[] = [
-  { id: 'as1', name: 'Retail' },
-  { id: 'as2', name: 'Production' },
-  { id: 'as3', name: 'Services' },
+  { id: 'as1', name: 'Ритейл' },
+  { id: 'as2', name: 'Производство' },
+  { id: 'as3', name: 'Услуги' },
 ];
 
 const seedLeadSources: LeadSource[] = [
-  { id: 'ls1', name: 'Website' },
-  { id: 'ls2', name: 'Referral' },
-  { id: 'ls3', name: 'Cold Call' },
+  { id: 'ls1', name: 'Сайт' },
+  { id: 'ls2', name: 'Рекомендация' },
+  { id: 'ls3', name: 'Холодный звонок' },
 ];
 
 const seedOrganizations: Organization[] = [
-  { id: 'o1', name: 'OOO 1C-Service' },
-  { id: 'o2', name: 'IP Developer' },
+  { id: 'o1', name: 'ООО 1С-Сервис' },
+  { id: 'o2', name: 'ИП Разработчик' },
 ];
 
 const seedConfigs: Configuration[] = [
-  { id: 'c1', name: 'Accounting 3.0', is_industry: false },
-  { id: 'c2', name: 'Trade Management 11', is_industry: false },
-  { id: 'c3', name: 'Construction ERP', is_industry: true },
+  { id: 'c1', name: 'Бухгалтерия 3.0', is_industry: false },
+  { id: 'c2', name: 'Управление торговлей 11', is_industry: false },
+  { id: 'c3', name: 'ERP Строительство', is_industry: true },
 ];
 
 const seedVersions: ConfigVersion[] = [
@@ -81,19 +81,19 @@ const seedVersions: ConfigVersion[] = [
 const seedClients: Client[] = [
   {
     id: 'cl1',
-    short_name: 'TechStore',
-    full_name: 'TechStore Ltd.',
+    short_name: 'ТехноСклад',
+    full_name: 'ООО ТехноСклад Плюс',
     bin: '123456789012',
-    tags: ['vip', 'urgent'],
+    tags: ['vip', 'срочно'],
     rating: 5,
     is_gov: false,
     activity_id: 'as1',
     source_id: 'ls1',
     owner_id: 'u1',
-    legal_address: '123 Tech St',
-    actual_address: '123 Tech St',
+    legal_address: 'г. Алматы, ул. Техно, 123',
+    actual_address: 'г. Алматы, ул. Техно, 123',
     email: 'info@techstore.local',
-    phone: '+79991234567'
+    phone: '+77271234567'
   }
 ];
 
@@ -101,11 +101,11 @@ const seedContacts: Contact[] = [
   {
     id: 'ct1',
     client_id: 'cl1',
-    first_name: 'John',
-    last_name: 'Doe',
-    position: 'Director',
-    phone: '+79990001122',
-    email: 'john@techstore.local',
+    first_name: 'Иван',
+    last_name: 'Иванов',
+    position: 'Директор',
+    phone: '+77071112233',
+    email: 'ivan@techstore.local',
     rating: 4,
   }
 ];
@@ -115,8 +115,8 @@ const seedContracts: Contract[] = [
     id: 'con1',
     client_id: 'cl1',
     organization_id: 'o1',
-    contract_number: 'CNT-2023-001',
-    title: 'Main Service Agreement',
+    contract_number: 'ДОГ-2023-001',
+    title: 'Основной договор обслуживания',
     start_date: '2023-01-01',
     end_date: '2025-12-31',
     is_signed: true,
@@ -129,7 +129,7 @@ const seedContracts: Contract[] = [
 const seedDatabases: Database1C[] = [
   {
     id: 'db1',
-    name: 'Accounting_Main',
+    name: 'Бухгалтерия_Основная',
     reg_number: '800123456',
     config_id: 'c1',
     work_mode: 'file',
@@ -150,16 +150,16 @@ const seedTasks: Task[] = [
     type: 'consultation',
     priority: 'high',
     status: 'Зарегистрирована',
-    title: 'Update Accounting Rules',
-    description: 'The client requested a consultation on new tax rules implementation.',
+    title: 'Обновление учетной политики',
+    description: 'Клиент запросил консультацию по внедрению новых правил налогообложения.',
     author_id: 'u1',
     performer_ids: ['u2'],
     observer_ids: ['u1'],
-    tags: ['tax', 'consult'],
+    tags: ['налоги', 'консультация'],
     created_at: new Date().toISOString(),
     checklist: [
-      { id: 'i1', text: 'Read legislation', is_done: true },
-      { id: 'i2', text: 'Call client', is_done: false }
+      { id: 'i1', text: 'Прочитать законодательство', is_done: true },
+      { id: 'i2', text: 'Позвонить клиенту', is_done: false }
     ],
     attachments: [],
     time_logs: []

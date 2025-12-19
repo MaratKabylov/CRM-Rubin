@@ -22,29 +22,29 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-slate-800">Рабочий стол</h1>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          label="Total Clients" 
+          label="Всего клиентов" 
           value={clients.length} 
           icon={Users} 
           color="bg-blue-500" 
         />
         <StatCard 
-          label="Active ITS Contracts" 
+          label="Договоры ИТС" 
           value={activeContracts} 
           icon={FileText} 
           color="bg-green-500" 
         />
         <StatCard 
-          label="Managed Databases" 
+          label="Баз на обслуживании" 
           value={databases.length} 
           icon={Database} 
           color="bg-purple-500" 
         />
         <StatCard 
-          label="Total Contacts" 
+          label="Контактные лица" 
           value={contacts.length} 
           icon={CheckCircle} 
           color="bg-orange-500" 
@@ -53,7 +53,7 @@ const DashboardPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="font-bold text-lg text-slate-800 mb-4">Recent Clients</h3>
+          <h3 className="font-bold text-lg text-slate-800 mb-4">Новые клиенты</h3>
           <div className="space-y-3">
             {clients.slice(0, 5).map(client => (
               <div key={client.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
@@ -62,29 +62,29 @@ const DashboardPage: React.FC = () => {
                   <div className="text-xs text-slate-500 truncate">{client.email}</div>
                 </div>
                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded flex-shrink-0">
-                  Active
+                  Активен
                 </span>
               </div>
             ))}
-            {clients.length === 0 && <p className="text-slate-400">No clients found.</p>}
+            {clients.length === 0 && <p className="text-slate-400">Клиенты не найдены.</p>}
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="font-bold text-lg text-slate-800 mb-4">Expiring Contracts</h3>
+          <h3 className="font-bold text-lg text-slate-800 mb-4">Истекающие договоры</h3>
           <div className="space-y-3">
             {contracts.slice(0, 5).map(contract => (
               <div key={contract.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <div className="min-w-0 flex-1 mr-2">
                   <div className="font-medium text-slate-800 truncate">{contract.contract_number}</div>
-                  <div className="text-xs text-slate-500 truncate">Expires: {contract.end_date}</div>
+                  <div className="text-xs text-slate-500 truncate">До: {contract.end_date}</div>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded flex-shrink-0 ${contract.its_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {contract.its_active ? 'Active' : 'Inactive'}
+                  {contract.its_active ? 'Активен' : 'Истек'}
                 </span>
               </div>
             ))}
-            {contracts.length === 0 && <p className="text-slate-400">No contracts found.</p>}
+            {contracts.length === 0 && <p className="text-slate-400">Договоры не найдены.</p>}
           </div>
         </div>
       </div>

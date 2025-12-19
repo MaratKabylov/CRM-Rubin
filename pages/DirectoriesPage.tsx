@@ -6,22 +6,25 @@ import ConfirmModal from '../components/ConfirmModal';
 
 type DirectoryType = 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions' | 'queue_templates';
 
+const TAB_LABELS: Record<DirectoryType, string> = {
+  spheres: 'Сферы деят-ти',
+  sources: 'Источники лидов',
+  orgs: 'Организации (наши)',
+  configs: 'Конфигурации 1С',
+  versions: 'Релизы / Версии',
+  queue_templates: 'Шаблоны очередей'
+};
+
 const DirectoriesPage: React.FC = () => {
   const { spheres, sources, orgs, configs, versions, queueTemplates, addDirectoryItem, deleteDirectoryItem } = useData();
   const [activeTab, setActiveTab] = useState<DirectoryType>('spheres');
   
-  // Generic Name Input for most directories
   const [newItemName, setNewItemName] = useState('');
-
-  // Specific inputs for Versions
   const [verConfigId, setVerConfigId] = useState('');
   const [verRelease, setVerRelease] = useState('');
   const [verDate, setVerDate] = useState('');
+  const [templateStatuses, setTemplateStatuses] = useState<string[]>(['Зарегистрирована', 'В работе', 'Закрыта']);
 
-  // Specific inputs for Queue Templates
-  const [templateStatuses, setTemplateStatuses] = useState<string[]>(['Зарегистрирована', 'В работе', 'Закрыт']);
-
-  // Confirm Modal State
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({
       isOpen: false, title: '', message: '', onConfirm: () => {}
   });
@@ -46,11 +49,7 @@ const DirectoriesPage: React.FC = () => {
     
     if (activeTab === 'versions') {
         if (!verConfigId || !verRelease || !verDate) return;
-        addDirectoryItem('versions', { 
-            config_id: verConfigId, 
-            release: verRelease, 
-            date: verDate 
-        });
+        addDirectoryItem('versions', { config_id: verConfigId, release: verRelease, date: verDate });
         setVerRelease('');
         setVerDate('');
         return;
@@ -58,206 +57,79 @@ const DirectoriesPage: React.FC = () => {
 
     if (activeTab === 'queue_templates') {
         if (!newItemName.trim() || templateStatuses.length === 0) return;
-        addDirectoryItem('queue_templates', {
-            name: newItemName,
-            statuses: templateStatuses
-        });
+        addDirectoryItem('queue_templates', { name: newItemName, statuses: templateStatuses });
         setNewItemName('');
-        setTemplateStatuses(['Зарегистрирована', 'В работе', 'Закрыт']);
+        setTemplateStatuses(['Зарегистрирована', 'В работе', 'Закрыта']);
         return;
     }
 
     if (!newItemName.trim()) return;
-    
     const payload: any = { name: newItemName };
     if (activeTab === 'configs') payload.is_industry = false;
-
     addDirectoryItem(activeTab, payload);
     setNewItemName('');
   };
 
-  const updateStatusName = (index: number, name: string) => {
-    const newStatuses = [...templateStatuses];
-    newStatuses[index] = name;
-    setTemplateStatuses(newStatuses);
-  };
-
-  const addStatus = () => setTemplateStatuses([...templateStatuses, 'New Status']);
-  const removeStatus = (idx: number) => setTemplateStatuses(templateStatuses.filter((_, i) => i !== idx));
-
-  const moveStatus = (index: number, direction: 'up' | 'down') => {
-    const newStatuses = [...templateStatuses];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newStatuses.length) return;
-    [newStatuses[index], newStatuses[targetIndex]] = [newStatuses[targetIndex], newStatuses[index]];
-    setTemplateStatuses(newStatuses);
-  };
-
-  const getLabel = () => {
-      switch(activeTab) {
-          case 'orgs': return 'Organizations';
-          case 'configs': return 'Configurations';
-          case 'versions': return 'Config Versions';
-          case 'spheres': return 'Activity Spheres';
-          case 'sources': return 'Lead Sources';
-          case 'queue_templates': return 'Queue Templates';
-      }
-  };
-
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800">Directories</h1>
+      <h1 className="text-2xl font-bold text-slate-800">Справочники</h1>
       
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar Nav - Horizontal on mobile, vertical on large screens */}
         <div className="w-full lg:w-64 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-2 lg:pb-0">
-          {[
-            { id: 'spheres', label: 'Spheres' },
-            { id: 'sources', label: 'Sources' },
-            { id: 'orgs', label: 'Orgs' },
-            { id: 'configs', label: '1C Configs' },
-            { id: 'versions', label: 'Versions' },
-            { id: 'queue_templates', label: 'Templates' },
-          ].map((item) => (
+          {(Object.keys(TAB_LABELS) as DirectoryType[]).map((id) => (
             <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as DirectoryType)}
+              key={id}
+              onClick={() => setActiveTab(id)}
               className={`text-left px-4 py-3 rounded-lg flex items-center justify-between transition flex-shrink-0 lg:flex-shrink ${
-                activeTab === item.id 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'bg-white text-slate-600 hover:bg-slate-50'
+                activeTab === id ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <span className="font-medium text-sm whitespace-nowrap">{item.label}</span>
-              {activeTab === item.id ? <List size={16} className="hidden lg:block ml-2" /> : <Layers size={16} className="hidden lg:block ml-2 text-slate-400 opacity-50"/>}
+              <span className="font-medium text-sm whitespace-nowrap">{TAB_LABELS[id]}</span>
             </button>
           ))}
         </div>
 
-        {/* Content Area */}
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-           <h2 className="text-xl font-bold text-slate-800 mb-6 capitalize border-b pb-2">
-             {getLabel()}
-           </h2>
+           <h2 className="text-xl font-bold text-slate-800 mb-6 border-b pb-2">{TAB_LABELS[activeTab]}</h2>
 
            <form onSubmit={handleAdd} className="space-y-4 mb-8">
              <div className="flex flex-col sm:flex-row gap-4">
                {activeTab === 'versions' ? (
                   <div className="flex flex-col gap-4 flex-1">
-                     <select 
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        required
-                        value={verConfigId}
-                        onChange={(e) => setVerConfigId(e.target.value)}
-                     >
-                         <option value="">Select Configuration...</option>
+                     <select className="input" required value={verConfigId} onChange={(e) => setVerConfigId(e.target.value)}>
+                         <option value="">Выберите конфигурацию...</option>
                          {configs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                      </select>
                      <div className="flex flex-col sm:flex-row gap-4">
-                        <input 
-                          type="text" 
-                          className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                          placeholder="Release (e.g. 3.0.1.1)"
-                          value={verRelease}
-                          onChange={(e) => setVerRelease(e.target.value)}
-                          required
-                        />
-                        <input 
-                          type="date"
-                          className="w-full sm:w-40 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                          value={verDate}
-                          onChange={(e) => setVerDate(e.target.value)}
-                          required
-                        />
+                        <input type="text" className="input" placeholder="Релиз (напр. 3.0.1.1)" value={verRelease} onChange={(e) => setVerRelease(e.target.value)} required />
+                        <input type="date" className="input sm:w-44" value={verDate} onChange={(e) => setVerDate(e.target.value)} required />
                      </div>
                   </div>
                ) : (
-                  <input 
-                    type="text" 
-                    className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder={activeTab === 'queue_templates' ? "Template Name" : "Item name..."}
-                    value={newItemName}
-                    onChange={(e) => setNewItemName(e.target.value)}
-                    required
-                  />
+                  <input type="text" className="input flex-1" placeholder="Название элемента..." value={newItemName} onChange={(e) => setNewItemName(e.target.value)} required />
                )}
-               
-               <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-medium flex items-center justify-center gap-2 flex-shrink-0">
-                 <Plus size={18} /> Add
-               </button>
+               <button type="submit" className="btn-primary px-6 py-2 h-fit">Добавить</button>
              </div>
-
-             {activeTab === 'queue_templates' && (
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                   <div className="flex justify-between items-center">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Statuses Sequence</p>
-                      <button type="button" onClick={addStatus} className="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded hover:bg-slate-100 transition">Add status</button>
-                   </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {templateStatuses.map((s, idx) => (
-                         <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded border border-slate-100 group shadow-sm">
-                            <input 
-                               className="flex-1 text-xs outline-none focus:border-b focus:border-blue-400 min-w-0"
-                               value={s}
-                               onChange={(e) => updateStatusName(idx, e.target.value)}
-                            />
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
-                               <button type="button" disabled={idx===0} onClick={()=>moveStatus(idx, 'up')} className="p-0.5 text-slate-400 hover:text-blue-500"><ChevronUp size={12}/></button>
-                               <button type="button" disabled={idx===templateStatuses.length-1} onClick={()=>moveStatus(idx, 'down')} className="p-0.5 text-slate-400 hover:text-blue-500"><ChevronDown size={12}/></button>
-                               <button type="button" onClick={()=>removeStatus(idx)} className="p-0.5 text-slate-400 hover:text-red-500"><X size={12}/></button>
-                            </div>
-                         </div>
-                      ))}
-                   </div>
-                </div>
-             )}
            </form>
 
            <div className="space-y-2">
              {getData().map((item: any) => (
-               <div key={item.id} className="flex flex-col p-3 bg-slate-50 rounded border border-slate-100 group">
-                 <div className="flex items-center justify-between">
-                    <span className="text-slate-700 font-bold min-w-0 flex-1 mr-2">
-                      {activeTab === 'versions' ? (
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-semibold w-fit truncate max-w-full">
-                                  {configs.find(c => c.id === item.config_id)?.name || 'Unknown Config'}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-blue-700 text-xs">{item.release}</span>
-                                <span className="text-[10px] text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                    <Calendar size={10}/> {item.date}
-                                </span>
-                              </div>
-                          </div>
-                      ) : (
-                        <span className="truncate block">{item.name}</span>
-                      )}
-                    </span>
-                    <button 
-                      onClick={() => openConfirm('Delete Item', 'Are you sure?', () => deleteDirectoryItem(activeTab, item.id))}
-                      className="text-slate-300 hover:text-red-500 transition p-1 flex-shrink-0"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+               <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-100 group">
+                 <div className="flex-1 min-w-0">
+                    {activeTab === 'versions' ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                           <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded font-bold">{configs.find(c => c.id === item.config_id)?.name}</span>
+                           <span className="text-sm font-mono text-blue-700">{item.release}</span>
+                           <span className="text-[10px] text-slate-400">от {item.date}</span>
+                        </div>
+                    ) : <span>{item.name}</span>}
                  </div>
-                 {activeTab === 'queue_templates' && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                        {item.statuses?.map((s: string, i: number) => (
-                           <div key={i} className="flex items-center">
-                              <span className="text-[10px] bg-white border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded">{s}</span>
-                              {i < item.statuses.length - 1 && <span className="mx-0.5 text-slate-300">→</span>}
-                           </div>
-                        ))}
-                    </div>
-                 )}
+                 <button onClick={() => openConfirm('Удалить элемент', 'Вы уверены?', () => deleteDirectoryItem(activeTab, item.id))} className="text-slate-300 hover:text-red-500 transition p-1"><Trash2 size={18} /></button>
                </div>
              ))}
-             {getData().length === 0 && <p className="text-slate-400 italic text-sm">No items found.</p>}
            </div>
         </div>
       </div>
-      
       <ConfirmModal 
         isOpen={confirmState.isOpen}
         onClose={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
