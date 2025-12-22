@@ -6,7 +6,7 @@ import {
   Phone, Mail, MapPin, Briefcase, Database as DbIcon, 
   FileText, UserPlus, Trash2, Edit2, Shield, Key, 
   History, Save, X, Plus, ClipboardList, Clock, CheckCircle, Activity, Globe, Tag as TagIcon,
-  FileCheck, Lock, Info, Timer, User, Fingerprint
+  FileCheck, Lock, Info, Timer, User, Fingerprint, Eye
 } from 'lucide-react';
 import { Contact, Contract, Database1C, Client, Task, DbState } from '../types';
 import ConfirmModal from '../components/ConfirmModal';
@@ -54,6 +54,10 @@ const ClientDetailPage: React.FC = () => {
   const [showDbModal, setShowDbModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   
+  // View modals state
+  const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [viewingDb, setViewingDb] = useState<Database1C | null>(null);
+  
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
@@ -69,7 +73,7 @@ const ClientDetailPage: React.FC = () => {
 
   const [clientForm, setClientForm] = useState<Partial<Client>>({});
   const [contactForm, setContactForm] = useState<Partial<Contact>>({});
-  const [contractForm, setContractForm] = useState<Partial<Contract>>({});
+  const [contractForm, setContactFormForm] = useState<Partial<Contract>>({});
   const [dbForm, setDbForm] = useState<Partial<Database1C>>({});
   const [tagInput, setTagInput] = useState('');
 
@@ -89,8 +93,8 @@ const ClientDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (showContractModal) {
-      if (editingContract) setContractForm(editingContract);
-      else setContractForm({ 
+      if (editingContract) setContactFormForm(editingContract);
+      else setContactFormForm({ 
         client_id: id, 
         its_active: true, 
         its_ours: true, 
@@ -183,6 +187,28 @@ const ClientDetailPage: React.FC = () => {
       today.setHours(0, 0, 0, 0);
       const target = new Date(dateString);
       return target >= today;
+  };
+
+  const calculateContractMinutes = (contract: Contract) => {
+    const start = new Date(contract.start_date);
+    const end = new Date(contract.end_date);
+    
+    const consumed = clientTasks.reduce((total, task) => {
+      const taskMinutes = (task.time_logs || []).reduce((acc, log) => {
+        const logDate = new Date(log.date);
+        if (logDate >= start && logDate <= end) {
+          return acc + log.duration_minutes;
+        }
+        return acc;
+      }, 0);
+      return total + taskMinutes;
+    }, 0);
+
+    return {
+      total: contract.minutes_included,
+      consumed,
+      remaining: contract.minutes_included - consumed
+    };
   };
 
   return (
@@ -285,10 +311,10 @@ const ClientDetailPage: React.FC = () => {
                       <th className="p-3 text-center">Подписан</th>
                       <th className="p-3 text-center">Статус</th>
                       <th className="p-3 text-center">ИТС</th>
-                      <th className="p-3 text-center">ИТС Статус</th>
-                      <th className="p-3 text-center">Минуты</th>
+                      <th className="p-3 text-center">ИТС Срок</th>
+                      <th className="p-3 text-center">Остаток минут</th>
+                      <th className="p-3 text-center">Минуты (Вкл)</th>
                       <th className="p-3">Доступы ИТС</th>
-                      <th className="p-3">Коммент</th>
                       <th className="p-3 text-right">Действия</th>
                     </tr>
                   </thead>
@@ -297,6 +323,9 @@ const ClientDetailPage: React.FC = () => {
                       const contractActive = isActiveDate(c.end_date);
                       const itsActive = isActiveDate(c.its_expiration_date);
                       const orgName = orgs.find(o => o.id === c.organization_id)?.name || '—';
+                      const { consumed, remaining } = calculateContractMinutes(c);
+                      const isLowBalance = c.minutes_included > 0 && (remaining / c.minutes_included) < 0.15;
+
                       return (
                         <tr key={c.id} className="hover:bg-slate-50/50">
                           <td className="p-3 font-medium text-slate-700 whitespace-nowrap">{orgName}</td>
@@ -329,22 +358,36 @@ const ClientDetailPage: React.FC = () => {
                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap ${itsActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                {itsActive ? 'Активен' : 'Истек'}
                              </span>
-                             {c.its_expiration_date && <div className="text-[9px] text-slate-400 mt-1">до {c.its_expiration_date}</div>}
+                             {c.its_expiration_date && <div className="text-[9px] text-slate-400 mt-1 whitespace-nowrap">до {c.its_expiration_date}</div>}
                           </td>
-                          <td className="p-3 text-center font-bold text-slate-700">{c.minutes_included}</td>
+                          <td className="p-3 text-center">
+                             <div 
+                                className={`font-bold text-[11px] ${remaining <= 0 ? 'text-red-600' : isLowBalance ? 'text-orange-500' : 'text-slate-700'}`}
+                                title={`Потрачено: ${consumed} мин. Из: ${c.minutes_included} мин.`}
+                             >
+                               {remaining} мин.
+                             </div>
+                             <div className="w-20 mx-auto bg-slate-100 h-1 mt-1 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all ${remaining <= 0 ? 'bg-red-500' : isLowBalance ? 'bg-orange-500' : 'bg-green-500'}`}
+                                  style={{ width: `${Math.min(100, Math.max(0, (remaining / (c.minutes_included || 1)) * 100))}%` }}
+                                ></div>
+                             </div>
+                          </td>
+                          <td className="p-3 text-center font-bold text-slate-400">{c.minutes_included}</td>
                           <td className="p-3 whitespace-nowrap">
                             {c.its_login ? (
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col gap-0.5">
                                 <span className="flex items-center gap-1 text-[10px]"><User size={10} className="text-slate-400"/> {c.its_login}</span>
                                 <span className="flex items-center gap-1 text-[10px]"><Lock size={10} className="text-slate-400"/> {c.its_password}</span>
                               </div>
                             ) : <span className="text-slate-300">—</span>}
                           </td>
-                          <td className="p-3 italic text-slate-400 max-w-[150px] truncate" title={c.comment}>{c.comment || '—'}</td>
                           <td className="p-3 text-right">
                             <div className="flex justify-end gap-1">
-                              <button onClick={() => { setEditingContract(c); setShowContractModal(true); }} className="text-slate-400 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
-                              <button onClick={() => openConfirm('Удалить договор', 'Вы уверены?', () => deleteContract(c.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                              <button onClick={() => setViewingContract(c)} className="text-slate-400 hover:text-green-600 p-1" title="Просмотр"><Eye size={14}/></button>
+                              <button onClick={() => { setEditingContract(c); setShowContractModal(true); }} className="text-slate-400 hover:text-blue-500 p-1" title="Редактировать"><Edit2 size={14}/></button>
+                              <button onClick={() => openConfirm('Удалить договор', 'Вы уверены?', () => deleteContract(c.id))} className="text-slate-400 hover:text-red-500 p-1" title="Удалить"><Trash2 size={14}/></button>
                             </div>
                           </td>
                         </tr>
@@ -368,6 +411,7 @@ const ClientDetailPage: React.FC = () => {
                   return (
                     <div key={db.id} className="border border-slate-200 p-4 rounded-xl flex flex-col relative group hover:border-purple-200 transition bg-slate-50/30">
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex gap-1 z-10">
+                          <button onClick={() => setViewingDb(db)} className="text-slate-400 hover:text-green-600 hover:bg-white rounded p-1 shadow-sm transition"><Eye size={14}/></button>
                           <button onClick={() => { setEditingDb(db); setShowDbModal(true); }} className="text-slate-400 hover:text-blue-600 hover:bg-white rounded p-1 shadow-sm transition"><Edit2 size={14}/></button>
                           <button onClick={() => openConfirm('Удалить базу', 'Вы уверены?', () => deleteDatabase(db.id))} className="text-slate-400 hover:text-red-600 hover:bg-white rounded p-1 shadow-sm transition"><Trash2 size={14}/></button>
                       </div>
@@ -377,14 +421,14 @@ const ClientDetailPage: React.FC = () => {
                       </div>
                       <div className="text-[11px] text-slate-500 space-y-1.5 mb-3 flex-1">
                           <div className="flex justify-between items-center">
-                            <span>Режим:</span>
+                            <span>Режим работы:</span>
                             <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-bold uppercase text-slate-500">{db.work_mode === 'file' ? 'Файловый' : 'Сервер'}</span>
                           </div>
                           <p className="truncate">Конфиг: <span className="text-blue-600 font-medium">{configs.find(c => c.id === db.config_id)?.name}</span></p>
                           <p>Рег. номер: <span className="text-slate-700">{db.reg_number}</span></p>
                           
-                          <div className="flex justify-between items-center pt-1 border-t border-slate-100 mt-2">
-                             <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">На поддержке ИТС:</span>
+                          <div className="flex justify-between items-center pt-2 border-t border-slate-100 mt-2">
+                             <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">ИТС поддержка:</span>
                              {db.its_supported ? (
                                 <span className="text-[10px] text-green-600 font-bold flex items-center gap-1"><CheckCircle size={10}/> Да</span>
                              ) : (
@@ -395,12 +439,12 @@ const ClientDetailPage: React.FC = () => {
                           <div className="flex flex-col gap-1 mt-2 p-2 bg-white rounded border border-slate-100 shadow-sm">
                              <div className="flex items-center gap-1.5 text-[10px] text-slate-600">
                                 <User size={10} className="text-slate-400" />
-                                <span className="font-medium">Логин:</span>
+                                <span className="font-medium">Admin:</span>
                                 <span className="truncate">{db.db_admin || '—'}</span>
                              </div>
                              <div className="flex items-center gap-1.5 text-[10px] text-slate-600">
                                 <Lock size={10} className="text-slate-400" />
-                                <span className="font-medium">Пароль:</span>
+                                <span className="font-medium">Pass:</span>
                                 <span className="truncate">{db.db_password || '—'}</span>
                              </div>
                           </div>
@@ -622,36 +666,36 @@ const ClientDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label">Наша организация</label>
-                  <select required className="input" value={contractForm.organization_id} onChange={e => setContractForm({...contractForm, organization_id: e.target.value})}>
+                  <select required className="input" value={contractForm.organization_id} onChange={e => setContactFormForm({...contractForm, organization_id: e.target.value})}>
                     <option value="">Выберите...</option>
                     {orgs.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                   </select>
                 </div>
-                <div><label className="label">Номер договора</label><input required className="input" value={contractForm.contract_number || ''} onChange={e => setContractForm({...contractForm, contract_number: e.target.value})} /></div>
+                <div><label className="label">Номер договора</label><input required className="input" value={contractForm.contract_number || ''} onChange={e => setContactFormForm({...contractForm, contract_number: e.target.value})} /></div>
               </div>
-              <div><label className="label">Наименование договора</label><input required className="input" value={contractForm.title || ''} onChange={e => setContractForm({...contractForm, title: e.target.value})} /></div>
+              <div><label className="label">Наименование договора</label><input required className="input" value={contractForm.title || ''} onChange={e => setContactFormForm({...contractForm, title: e.target.value})} /></div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="label">Дата начала</label><input type="date" required className="input" value={contractForm.start_date || ''} onChange={e => setContractForm({...contractForm, start_date: e.target.value})} /></div>
-                <div><label className="label">Дата окончания</label><input type="date" required className="input" value={contractForm.end_date || ''} onChange={e => setContractForm({...contractForm, end_date: e.target.value})} /></div>
+                <div><label className="label">Дата начала</label><input type="date" required className="input" value={contractForm.start_date || ''} onChange={e => setContactFormForm({...contractForm, start_date: e.target.value})} /></div>
+                <div><label className="label">Дата окончания</label><input type="date" required className="input" value={contractForm.end_date || ''} onChange={e => setContactFormForm({...contractForm, end_date: e.target.value})} /></div>
               </div>
               
               <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label className="label">Минут в месяц</label><input type="number" className="input" value={contractForm.minutes_included || 0} onChange={e => setContractForm({...contractForm, minutes_included: parseInt(e.target.value) || 0})} /></div>
-                    <div><label className="label">Дата окончания ИТС</label><input type="date" className="input" value={contractForm.its_expiration_date || ''} onChange={e => setContractForm({...contractForm, its_expiration_date: e.target.value})} /></div>
+                    <div><label className="label">Минут в месяц</label><input type="number" className="input" value={contractForm.minutes_included || 0} onChange={e => setContactFormForm({...contractForm, minutes_included: parseInt(e.target.value) || 0})} /></div>
+                    <div><label className="label">Дата окончания ИТС</label><input type="date" className="input" value={contractForm.its_expiration_date || ''} onChange={e => setContactFormForm({...contractForm, its_expiration_date: e.target.value})} /></div>
                  </div>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label className="label">Логин ИТС</label><input className="input" value={contractForm.its_login || ''} onChange={e => setContractForm({...contractForm, its_login: e.target.value})} /></div>
-                    <div><label className="label">Пароль ИТС</label><input className="input" value={contractForm.its_password || ''} onChange={e => setContractForm({...contractForm, its_password: e.target.value})} /></div>
+                    <div><label className="label">Логин ИТС</label><input className="input" value={contractForm.its_login || ''} onChange={e => setContactFormForm({...contractForm, its_login: e.target.value})} /></div>
+                    <div><label className="label">Пароль ИТС</label><input className="input" value={contractForm.its_password || ''} onChange={e => setContactFormForm({...contractForm, its_password: e.target.value})} /></div>
                  </div>
               </div>
 
-              <div><label className="label">Комментарий</label><textarea className="input h-20" value={contractForm.comment || ''} onChange={e => setContractForm({...contractForm, comment: e.target.value})} /></div>
+              <div><label className="label">Комментарий</label><textarea className="input h-20" value={contractForm.comment || ''} onChange={e => setContactFormForm({...contractForm, comment: e.target.value})} /></div>
 
               <div className="flex flex-wrap items-center gap-6 py-2 border-t pt-4">
-                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={contractForm.is_signed} onChange={e => setContractForm({...contractForm, is_signed: e.target.checked})}/> Договор подписан</label>
-                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={contractForm.its_ours} onChange={e => setContractForm({...contractForm, its_ours: e.target.checked})}/> Наша подписка ИТС</label>
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={contractForm.is_signed} onChange={e => setContactFormForm({...contractForm, is_signed: e.target.checked})}/> Договор подписан</label>
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer"><input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={contractForm.its_ours} onChange={e => setContactFormForm({...contractForm, its_ours: e.target.checked})}/> Наша подписка ИТС</label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
@@ -720,6 +764,148 @@ const ClientDetailPage: React.FC = () => {
                 <button type="submit" className="btn-primary">Сохранить</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW MODALS */}
+      {viewingContract && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-auto animate-in zoom-in-95 duration-200">
+             <div className="p-6 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                   <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><FileText size={20}/></div>
+                   <h2 className="text-xl font-bold text-slate-800 truncate pr-4">Просмотр договора</h2>
+                </div>
+                <button onClick={() => setViewingContract(null)} className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition"><X size={24} /></button>
+             </div>
+             <div className="p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-8">
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Номер договора</p>
+                      <p className="font-mono text-lg font-bold text-slate-800">{viewingContract.contract_number}</p>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Статус</p>
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${isActiveDate(viewingContract.end_date) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {isActiveDate(viewingContract.end_date) ? 'Активен' : 'Истек'}
+                      </span>
+                   </div>
+                </div>
+                
+                <div>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Наименование</p>
+                   <p className="text-slate-800 font-medium">{viewingContract.title}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-50">
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Срок действия</p>
+                      <p className="text-sm text-slate-700">с {viewingContract.start_date} по {viewingContract.end_date}</p>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Включено минут</p>
+                      <p className="text-sm font-bold text-blue-600">{viewingContract.minutes_included} мин / мес</p>
+                   </div>
+                </div>
+
+                <div className="bg-blue-50/50 p-5 rounded-xl border border-blue-100 space-y-4">
+                   <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2"><Lock size={12}/> Доступы ИТС</p>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div>
+                         <p className="text-[10px] text-slate-400 mb-1">Логин</p>
+                         <p className="text-sm font-medium">{viewingContract.its_login || '—'}</p>
+                      </div>
+                      <div>
+                         <p className="text-[10px] text-slate-400 mb-1">Пароль</p>
+                         <p className="text-sm font-medium">{viewingContract.its_password || '—'}</p>
+                      </div>
+                   </div>
+                   {viewingContract.its_expiration_date && (
+                     <div className="pt-2 border-t border-blue-100">
+                        <p className="text-[10px] text-slate-400 mb-1">Подписка до</p>
+                        <p className="text-sm font-bold text-slate-700">{viewingContract.its_expiration_date}</p>
+                     </div>
+                   )}
+                </div>
+
+                {viewingContract.comment && (
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Комментарий</p>
+                    <p className="text-sm text-slate-600 italic">{viewingContract.comment}</p>
+                  </div>
+                )}
+
+                <div className="pt-6 flex justify-end">
+                   <button onClick={() => setViewingContract(null)} className="btn-primary px-10">Понятно</button>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {viewingDb && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-auto animate-in zoom-in-95 duration-200">
+             <div className="p-6 border-b flex justify-between items-center bg-purple-50 rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                   <div className="bg-purple-100 p-2 rounded-lg text-purple-600"><DbIcon size={20}/></div>
+                   <h2 className="text-xl font-bold text-slate-800 truncate pr-4">База 1С</h2>
+                </div>
+                <button onClick={() => setViewingDb(null)} className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition"><X size={24} /></button>
+             </div>
+             <div className="p-8 space-y-6">
+                <div className="flex justify-between items-start">
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Название информационной базы</p>
+                      <p className="text-xl font-bold text-slate-800">{viewingDb.name}</p>
+                   </div>
+                   <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${isActiveDate(clientContracts[0]?.its_expiration_date) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {viewingDb.its_supported ? 'На поддержке' : 'Без поддержки'}
+                   </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-50">
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Рег. номер</p>
+                      <p className="text-sm font-mono font-bold text-slate-700">{viewingDb.reg_number}</p>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Режим работы</p>
+                      <p className="text-sm font-medium text-slate-700 uppercase">{viewingDb.work_mode === 'file' ? 'Файловый' : 'Клиент-сервер'}</p>
+                   </div>
+                </div>
+
+                <div>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Конфигурация</p>
+                   <p className="text-sm font-bold text-blue-600">{configs.find(c => c.id === viewingDb.config_id)?.name}</p>
+                </div>
+
+                <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Lock size={12}/> Учетные данные (Admin)</p>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div>
+                         <p className="text-[10px] text-slate-400 mb-1">Пользователь</p>
+                         <p className="text-sm font-mono font-bold">{viewingDb.db_admin || '—'}</p>
+                      </div>
+                      <div>
+                         <p className="text-[10px] text-slate-400 mb-1">Пароль</p>
+                         <p className="text-sm font-mono font-bold">{viewingDb.db_password || '—'}</p>
+                      </div>
+                   </div>
+                </div>
+
+                <div>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Состояние</p>
+                   <span className={`inline-block px-3 py-1 rounded-lg text-[11px] font-bold uppercase tracking-tight ${DB_STATE_LABELS[viewingDb.state || 'full_support'].color}`}>
+                      {DB_STATE_LABELS[viewingDb.state || 'full_support'].label}
+                   </span>
+                </div>
+
+                <div className="pt-6 flex justify-end">
+                   <button onClick={() => setViewingDb(null)} className="btn-primary px-10">Закрыть</button>
+                </div>
+             </div>
           </div>
         </div>
       )}
