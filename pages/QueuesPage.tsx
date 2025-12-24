@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { Plus, Layers, Trash2, Edit2, Info, CheckCircle, ChevronUp, ChevronDown, GripVertical, X } from 'lucide-react';
-import { TaskQueue, QueueTemplate } from '../types';
+// Fixed: Changed QueueTemplate to QueueTemplateDefinition to match other files
+import { TaskQueue, QueueTemplateDefinition } from '../types';
 import ConfirmModal from '../components/ConfirmModal';
 
 const QueuesPage: React.FC = () => {

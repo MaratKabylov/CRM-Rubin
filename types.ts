@@ -2,19 +2,31 @@
 export type Role = 'admin' | 'user';
 export type WorkMode = 'file' | 'server';
 export type DbState = 'full_support' | 'full_support_with_extensions' | 'minor_change' | 'major_change' | 'custom_solution';
-export type EntityType = 'client' | 'contact' | 'contract' | 'database' | 'task' | 'queue' | 'queue_template' | 'time_log';
-export type ActionType = 'create' | 'update' | 'delete' | 'comment' | 'complete' | 'log_time';
+export type EntityType = 'client' | 'contact' | 'contract' | 'database' | 'task' | 'queue' | 'queue_template' | 'time_log' | 'message' | 'conversation';
+export type ActionType = 'create' | 'update' | 'delete' | 'comment' | 'complete' | 'log_time' | 'send_wa' | 'receive_wa';
 
 export type TaskType = 'consultation' | 'development' | 'request';
 export type Priority = 'low' | 'medium' | 'high';
 export type TaskStatus = string;
 
-export type QueueTemplate = string;
-
-export interface QueueTemplateDefinition {
+export interface Conversation {
   id: string;
-  name: string;
-  statuses: string[];
+  client_id: string;
+  channel: 'whatsapp';
+  external_chat_id: string; // chatId в GreenAPI (например, "77071234567@c.us")
+  created_at: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  task_id?: string;
+  direction: 'incoming' | 'outgoing';
+  text: string;
+  author_type: 'client' | 'manager';
+  author_id?: string;
+  external_id?: string; // idMessage из GreenAPI
+  created_at: string;
 }
 
 export interface TimeLog {
@@ -118,9 +130,9 @@ export interface Contract {
   end_date: string;
   comment?: string;
   is_signed: boolean;
-  its_active: boolean; // Manual toggle for support service generally
-  its_ours: boolean; // Flag if ITS is via our company
-  its_expiration_date?: string; // Critical for auto-status calculation
+  its_active: boolean;
+  its_ours: boolean;
+  its_expiration_date?: string;
   its_login?: string;
   its_password?: string;
   minutes_included: number;
@@ -145,6 +157,13 @@ export interface TaskQueue {
   name: string;
   prefix: string;
   template: string;
+  statuses: string[];
+}
+
+// Added missing QueueTemplateDefinition interface
+export interface QueueTemplateDefinition {
+  id: string;
+  name: string;
   statuses: string[];
 }
 

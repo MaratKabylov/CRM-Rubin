@@ -20,6 +20,8 @@ interface DataContextType {
   historyLogs: T.HistoryLog[];
   tasks: T.Task[];
   taskComments: T.TaskComment[];
+  conversations: T.Conversation[];
+  messages: T.Message[];
   
   refreshData: () => void;
 
@@ -60,6 +62,10 @@ interface DataContextType {
   deleteDirectoryItem: (type: 'spheres' | 'sources' | 'orgs' | 'configs' | 'versions' | 'queue_templates', id: string) => void;
   
   getClientStats: (clientId: string) => { avgRating: number; taskCount: number };
+
+  // WhatsApp
+  sendWhatsAppMessage: (taskId: string, text: string) => Promise<void>;
+  receiveWhatsAppWebhook: (payload: any) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -111,6 +117,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           entityId = (oldItem as Item).id;
           finalParentId = typeof parentId === 'function' ? parentId(oldItem as Item) : parentId;
           details = `Logged time effort`;
+        } else if (action === 'send_wa' || action === 'receive_wa') {
+           entityId = (oldItem as Item).id;
+           finalParentId = typeof parentId === 'function' ? parentId(oldItem as Item) : parentId;
+           details = action === 'send_wa' ? 'WhatsApp message sent' : 'WhatsApp message received';
         }
 
         db.history.create({
@@ -137,6 +147,92 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
+  // WhatsApp Logic
+  const sendWhatsAppMessage = async (taskId: string, text: string) => {
+    const task = db.tasks.getById(taskId);
+    if (!task) return;
+
+    const client = db.clients.getById(task.client_id);
+    if (!client) return;
+
+    const phoneNumber = client.phone.replace(/\D/g, '');
+    const externalChatId = `${phoneNumber}@c.us`;
+
+    // 1. Найти или создать диалог
+    let conversation = db.conversations.getAll().find(c => c.client_id === client.id && c.channel === 'whatsapp');
+    if (!conversation) {
+      conversation = db.conversations.create({
+        client_id: client.id,
+        channel: 'whatsapp',
+        external_chat_id: externalChatId,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // 2. Симуляция отправки через GreenAPI
+    // В реальном приложении здесь был бы fetch к GreenAPI
+    console.log(`[GreenAPI] Sending to ${externalChatId}: ${text}`);
+    const externalId = `msg-${Math.random().toString(36).substr(2, 9)}`;
+
+    // 3. Сохранить сообщение
+    db.messages.create({
+      conversation_id: conversation.id,
+      task_id: taskId,
+      direction: 'outgoing',
+      text,
+      author_type: 'manager',
+      author_id: user?.id,
+      external_id: externalId,
+      created_at: new Date().toISOString()
+    });
+
+    logAndExecute('message', client.id, 'send_wa', () => true, { id: externalId } as any);
+    refreshData();
+  };
+
+  const receiveWhatsAppWebhook = async (payload: any) => {
+    const { chatId, text, idMessage } = payload;
+    const phoneNumber = chatId.replace('@c.us', '');
+
+    // 1. Найти клиента
+    const client = db.clients.getAll().find(c => c.phone.replace(/\D/g, '') === phoneNumber);
+    if (!client) {
+      console.warn(`[Webhook] Client with phone ${phoneNumber} not found.`);
+      return;
+    }
+
+    // 2. Найти или создать диалог
+    let conversation = db.conversations.getAll().find(c => c.client_id === client.id && c.channel === 'whatsapp');
+    if (!conversation) {
+      conversation = db.conversations.create({
+        client_id: client.id,
+        channel: 'whatsapp',
+        external_chat_id: chatId,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // 3. Найти активную задачу клиента
+    let task = db.tasks.getAll().find(t => t.client_id === client.id && !t.status.toLowerCase().includes('закрыт'));
+    
+    // Если задачи нет — можно было бы создать новую здесь.
+    const taskId = task?.id;
+
+    // 4. Сохранить сообщение
+    db.messages.create({
+      conversation_id: conversation.id,
+      task_id: taskId,
+      direction: 'incoming',
+      text,
+      author_type: 'client',
+      external_id: idMessage,
+      created_at: new Date().toISOString()
+    });
+
+    logAndExecute('message', client.id, 'receive_wa', () => true, { id: idMessage } as any);
+    refreshData();
+  };
+
   const value: DataContextType = {
     users: db.users.getAll(),
     clients: db.clients.getAll(),
@@ -153,6 +249,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     tasks: db.tasks.getAll(),
     taskComments: db.comments.getAll(),
     historyLogs: db.history.getAll().sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+    conversations: db.conversations.getAll(),
+    messages: db.messages.getAll(),
 
     refreshData,
     getClientStats,
@@ -292,7 +390,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (type === 'versions') db.configVersions.delete(id);
       if (type === 'queue_templates') db.queueTemplates.delete(id);
       refreshData();
-    }
+    },
+
+    sendWhatsAppMessage,
+    receiveWhatsAppWebhook
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

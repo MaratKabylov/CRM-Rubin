@@ -2,7 +2,7 @@
 import { 
   User, Client, Contact, Contract, Database1C, 
   ActivitySphere, LeadSource, Organization, Configuration, ConfigVersion, HistoryLog,
-  Task, TaskComment, TaskQueue, QueueTemplateDefinition
+  Task, TaskComment, TaskQueue, QueueTemplateDefinition, Conversation, Message
 } from '../types';
 
 const seedUsers: User[] = [
@@ -93,7 +93,7 @@ const seedClients: Client[] = [
     legal_address: 'г. Алматы, ул. Техно, 123',
     actual_address: 'г. Алматы, ул. Техно, 123',
     email: 'info@techstore.local',
-    phone: '+77271234567'
+    phone: '77071112233'
   }
 ];
 
@@ -104,7 +104,7 @@ const seedContacts: Contact[] = [
     first_name: 'Иван',
     last_name: 'Иванов',
     position: 'Директор',
-    phone: '+77071112233',
+    phone: '77071112233',
     email: 'ivan@techstore.local',
     rating: 4,
   }
@@ -241,4 +241,6 @@ export const db = {
   history: new Collection<HistoryLog>('history', []),
   tasks: new Collection<Task>('tasks', seedTasks),
   comments: new Collection<TaskComment>('task_comments', []),
+  conversations: new Collection<Conversation>('conversations', []),
+  messages: new Collection<Message>('messages', []),
 };

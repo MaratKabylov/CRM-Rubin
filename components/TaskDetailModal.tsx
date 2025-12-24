@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -7,7 +7,7 @@ import {
   Building, Database as DbIcon, Star, Calendar, 
   Tag as TagIcon, Eye, Edit2, AlertCircle,
   Phone, Mail, Layers, History as HistoryIcon,
-  Timer, Plus
+  Timer, Plus, MessageCircle
 } from 'lucide-react';
 import { Task, TaskStatus, Priority } from '../types';
 import StarRating from './StarRating';
@@ -28,15 +28,21 @@ const PriorityBadge = ({ p }: { p: Priority }) => {
 };
 
 const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, onClose }) => {
-  const { tasks, clients, contacts, databases, users, taskComments, historyLogs, queues, updateTask, addComment, addTimeLog } = useData();
+  const { 
+    tasks, clients, contacts, databases, users, taskComments, 
+    historyLogs, queues, messages, conversations,
+    updateTask, addComment, addTimeLog, sendWhatsAppMessage, receiveWhatsAppWebhook 
+  } = useData();
   const { user: currentUser } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [waText, setWaText] = useState('');
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(0);
   const [contactRating, setContactRating] = useState(0);
-  const [activeSubTab, setActiveSubTab] = useState<'comments' | 'history' | 'time'>('comments');
+  const [activeSubTab, setActiveSubTab] = useState<'comments' | 'history' | 'time' | 'whatsapp'>('comments');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Time logging state
   const [logTimeMinutes, setLogTimeMinutes] = useState<string>('');
@@ -54,6 +60,18 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
   
   const performers = users.filter(u => task.performer_ids?.includes(u.id));
   const observers = users.filter(u => task.observer_ids?.includes(u.id));
+
+  // WhatsApp Messages
+  const conversation = conversations.find(c => c.client_id === task.client_id && c.channel === 'whatsapp');
+  const waMessages = messages
+    .filter(m => m.conversation_id === conversation?.id)
+    .sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  useEffect(() => {
+    if (activeSubTab === 'whatsapp') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [waMessages.length, activeSubTab]);
 
   const totalTimeMinutes = (task.time_logs || []).reduce((acc, log) => acc + (log.duration_minutes || 0), 0);
   const formatMinutes = (m: number) => {
@@ -91,6 +109,23 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
       if (!commentText.trim()) return;
       addComment(task.id, commentText);
       setCommentText('');
+  };
+
+  const handleSendWhatsApp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waText.trim()) return;
+    await sendWhatsAppMessage(task.id, waText);
+    setWaText('');
+  };
+
+  const handleSimulateIncoming = () => {
+    if (!client) return;
+    const phoneNumber = client.phone.replace(/\D/g, '');
+    receiveWhatsAppWebhook({
+      chatId: `${phoneNumber}@c.us`,
+      text: "Добрый день! Подскажите, когда будет готова задача?",
+      idMessage: `test-in-${Date.now()}`
+    });
   };
 
   const handleAddTimeLog = (e: React.FormEvent) => {
@@ -194,26 +229,32 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
                     </div>
                 )}
 
-                {/* Sub-Tabs: Comments vs History vs Time */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col">
+                {/* Sub-Tabs */}
+                <div className="pt-4 border-t border-slate-100 flex flex-col h-full">
                     <div className="flex border-b border-slate-100 mb-4 gap-4 overflow-x-auto pb-1 scrollbar-hide">
                         <button 
                             onClick={() => setActiveSubTab('comments')}
                             className={`pb-2 px-1 text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${activeSubTab === 'comments' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
-                            Communication ({comments.length})
+                            <span className="flex items-center gap-1.5"><MessageSquare size={12}/> Комментарии ({comments.length})</span>
+                        </button>
+                        <button 
+                            onClick={() => setActiveSubTab('whatsapp')}
+                            className={`pb-2 px-1 text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${activeSubTab === 'whatsapp' ? 'border-b-2 border-green-600 text-green-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            <span className="flex items-center gap-1.5 text-inherit"><MessageCircle size={12}/> WhatsApp {waMessages.length > 0 && `(${waMessages.length})`}</span>
                         </button>
                         <button 
                             onClick={() => setActiveSubTab('time')}
                             className={`pb-2 px-1 text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${activeSubTab === 'time' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
-                            Time Tracking ({formatMinutes(totalTimeMinutes)})
+                            <span className="flex items-center gap-1.5"><Timer size={12}/> Трудозатраты ({formatMinutes(totalTimeMinutes)})</span>
                         </button>
                         <button 
                             onClick={() => setActiveSubTab('history')}
                             className={`pb-2 px-1 text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${activeSubTab === 'history' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
-                            History ({logs.length})
+                            <span className="flex items-center gap-1.5"><HistoryIcon size={12}/> История ({logs.length})</span>
                         </button>
                     </div>
 
@@ -239,12 +280,65 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task: initialTask, on
                             <form onSubmit={handleSendComment} className="flex gap-2 mt-2">
                                 <input 
                                     className="input flex-1 bg-slate-50 border-transparent focus:bg-white text-sm" 
-                                    placeholder="Type your message..." 
+                                    placeholder="Внутренний комментарий..." 
                                     value={commentText}
                                     onChange={e => setCommentText(e.target.value)}
                                 />
                                 <button type="submit" className="bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20"><Send size={18}/></button>
                             </form>
+                        </div>
+                    )}
+
+                    {activeSubTab === 'whatsapp' && (
+                        <div className="flex flex-col h-[400px]">
+                            <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar mb-4 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                                {waMessages.map(m => (
+                                    <div key={m.id} className={`flex ${m.direction === 'outgoing' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[80%] p-3 rounded-2xl text-sm shadow-sm relative ${
+                                            m.direction === 'outgoing' 
+                                            ? 'bg-blue-600 text-white rounded-br-none' 
+                                            : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
+                                        }`}>
+                                            <p>{m.text}</p>
+                                            <p className={`text-[9px] mt-1 text-right ${m.direction === 'outgoing' ? 'text-blue-200' : 'text-slate-400'}`}>
+                                                {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {waMessages.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center h-full text-slate-400 text-center py-10">
+                                        <MessageCircle size={48} className="mb-4 opacity-20" />
+                                        <p className="text-sm italic">История сообщений пуста.</p>
+                                        <p className="text-[10px] mt-1">Всё общение через WhatsApp будет сохранено здесь.</p>
+                                    </div>
+                                )}
+                                <div ref={chatEndRef} />
+                            </div>
+                            
+                            <div className="flex flex-col gap-2">
+                                <form onSubmit={handleSendWhatsApp} className="flex gap-2">
+                                    <input 
+                                        className="input flex-1 border-slate-200 text-sm" 
+                                        placeholder="Написать клиенту в WhatsApp..." 
+                                        value={waText}
+                                        onChange={e => setWaText(e.target.value)}
+                                    />
+                                    <button 
+                                        type="submit" 
+                                        className="bg-green-600 text-white p-2.5 rounded-lg hover:bg-green-700 transition shadow-lg shadow-green-500/20"
+                                        title="Отправить сообщение"
+                                    >
+                                        <Send size={18}/>
+                                    </button>
+                                </form>
+                                <button 
+                                  onClick={handleSimulateIncoming}
+                                  className="text-[9px] text-slate-400 hover:text-blue-500 self-start italic"
+                                >
+                                  (Симулировать входящее сообщение)
+                                </button>
+                            </div>
                         </div>
                     )}
 
